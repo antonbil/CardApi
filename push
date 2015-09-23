@@ -1,0 +1,5 @@
+str="$*"
+command="git commit -a -m $str"
+echo $command
+git commit -a -m "$str"
+git push ssh://anton@81.207.236.65:29418/~anton/cardapi
