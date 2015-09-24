@@ -9,10 +9,10 @@ $db=getDB();
 $app->get("/", function () {
     echo "<h1>Hello Slim World</h1>";
 });//
-$app->get('/users',getUsers);
 //identify(ip,naam)
 $app->get('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {   
     $findplayer=$db->player->where("ip", $ip);
+//var_dump($findplayer);
     if (count($findplayer)>0){
      $players = array();
      foreach ($findplayer as $player) {
@@ -26,12 +26,13 @@ $app->get('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {
      } else {
 	$id=$_SERVER['REMOTE_ADDR'];
 	$status='ok';
-	$result = $db->player->insert(array(
+        $newplayer=array(
 	  "id" => $id, // omit or null for auto_increment
 	  "ip" => $ip,
 	  "name" => $naam,
 	  "status" => $status,
-	));
+	);
+	$result = $db->player->insert($newplayer);
         $players=$result;
     }
     $app->response()->header("Content-Type", "application/json");
