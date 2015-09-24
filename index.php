@@ -38,37 +38,10 @@ $app->get('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {
     echo json_encode($players);
    $db=null;
 });
-$app->get('/askstartinggames/:ip',askStartingGames);
-$app->get('/hello/:name', function ($name) {
-    echo "Hello, $name";
+$app->get('/askstartinggames/:ip',function ($ip) use ($app, $db) { 
 });
 // run the Slim app
 $app->run();
-function identify($ip,$naam){
-   $db=getDB();//(ip,id,name,status)
-    $players = array();
-     foreach ($db->player() as $player) {
-        $players[]  = array(
-            "id" => $player["id"],
-            "ip" => $player["ip"],
-            "name" => $player["name"],
-            "status" => $player["status"]
-        );
-    }
-    $app->response()->header("Content-Type", "application/json");
-    echo json_encode($players);
-/*   $id='zomaarwat';
-   $status='ok';
-   $db->exec("insert into player (`ip`,`id`,`name`,`status`) VALUES (\"$ip\", \"$id\", \"$naam\",\"$status\")");*/
-   $db=null;
-}
-function getUsers() {
-$c = array("anton","jannie","wieneke","jelma");
-echo '{"users": ' . json_encode($c) . '}';
-}
-function askStartingGames($ip) {
-    echo "<h1>Hai $ip</h1>";
-}
 
 function getDB()
 {
