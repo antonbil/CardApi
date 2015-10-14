@@ -93,8 +93,8 @@ $app->post('/initiategame/:ip',function ($ip) use ($app, $db) {
 	  "starter" => $ip,
 	  "tokenplayer" => 1,
 	  "status" => $status,
-          "restcards" => json_encode($cards);
-          "deckontable" => json_encode(array());
+          "restcards" => json_encode($cards),
+          "deckontable" => json_encode(array())
 	);
 	$result = $db->game->insert($newgame);
         //gameuser(usernr,gamenumber,ordernr,status)
@@ -102,7 +102,8 @@ $app->post('/initiategame/:ip',function ($ip) use ($app, $db) {
 	  "game" => $nr+1,
 	  "player" => $ip,
 	  "ordernr" => 1,
-	  "status" => $status
+	  "status" => $status,
+          "cards" => json_encode(array())
 	);
 	$result2 = $db->gameuser->insert($newgameuser);
     returnResult($app,$result);
