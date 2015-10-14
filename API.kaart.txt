@@ -1,0 +1,52 @@
+game(gamenumber,status,starter,tokenplayer,deckontable,restcards,winner)
+gameuser(usernr,gamenumber,status)
+player(ip,id,name,status)
+playercards(player,game,cards)
+gamemove(game,player,cards,time)
+
+Voor spel begint
+-identify(ip,naam) post
+aanmaken van nieuwe player
+returns ip, naam die volgens systeem bij ip hoort, en code: done, not-done(bijv. als gebruiker geblokt is), of already-there
+-initiategame(ip)
+Start new game post
+returns game-id
+-askstartinggames(ip) get
+List of starting games
+returns lijst met id's van spellen die zijn geinitieerd, maar nog niet gestart.
+-askdatastartinggame(ip,gamenr) get
+returns list of ip for all players who have applied for a game
+-getplayerinfo(ip,ipplayer) get
+returns name of ipplayer if ip is known to system, otherwise -1
+-applyforgame(ip,gamenr) post
+returns 1 if game still starting, and not full, and ip has not applied for this game yet. Otherwise 0.
+-startgame(ip,gamenr) post
+returns 1 if game is started, 0 if ip has not initiated game or no players yet
+
+Tijdens spel
+-gettoken(ip,gamenr) get
+returns the ip which has the token for the game, 0 if game not started yet etc.
+-gethand(ip,gamenr) get
+returns the cards a player has (array of cardnumbers) game is still playing, 0 otherwise 
+-getcard(ip,gamenr) get
+returns cardnumber which player gets if player has token, 0 otherwise
+-pushcard(ip,gamenr,cardnumber) post
+returns 1 if ip has token, 0 otherwise.
+-getexchange(ip,ipplayer,gamenr) get
+return cardnumber last pushed of player
+-getdeckontable(ip,gamenr) get
+returns list of cardnumbers lying open to see
+-swapcards(ip,gamenr) post
+returns list of cards lying on table if player has token, otherwise error
+-offerpass(ip,gamenr) post
+returns 1 if player has token, error otherwise
+-claimwin(ip,gamenr) post
+returns 1 if player has won, and has token. error otherwise
+-getstategame(ip,gamenr) get
+returns one of: initiated,started,ended
+-getresultgame(ip,gamenr, ipplayer) get
+returns list of cards for ipplayer if game is ended.
+-getwinnergame(ip,gamenr) get
+returns ip of winning player if game is ended
+
+ 

@@ -4,6 +4,9 @@ require 'vendor/slim/slim/Slim/Slim.php';
 \Slim\Slim::registerAutoloader();
 // create new Slim instance
 $app = new \Slim\Slim();
+//propel is een alternatief voor notorm
+//put voor nieuwe en update
+//syncen van namen velden en api-parameters
 $db=getDB();
 // add new Route 
 $app->get("/", function () {
