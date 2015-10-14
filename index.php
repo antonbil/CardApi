@@ -86,11 +86,15 @@ $app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {
 $app->post('/initiategame/:ip',function ($ip) use ($app, $db) {  
     $nr=$db->game->max("gamenumber");
 	$status='initiated';
+        $cards=array();
+        for ($i=1;$i<53;$i++)$cards[]=$i;
         $newgame=array(
 	  "gamenumber" => $nr+1,
 	  "starter" => $ip,
 	  "tokenplayer" => 1,
-	  "status" => $status
+	  "status" => $status,
+          "restcards" => json_encode($cards);
+          "deckontable" => json_encode(array());
 	);
 	$result = $db->game->insert($newgame);
         //gameuser(usernr,gamenumber,ordernr,status)
@@ -100,7 +104,7 @@ $app->post('/initiategame/:ip',function ($ip) use ($app, $db) {
 	  "ordernr" => 1,
 	  "status" => $status
 	);
-	$result = $db->gameuser->insert($newgameuser);
+	$result2 = $db->gameuser->insert($newgameuser);
     returnResult($app,$result);
 });
 //curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
