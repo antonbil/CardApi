@@ -3,7 +3,7 @@
 //db structure:
 /*$db = new SQLite3('mysqlitedb.db');*/
 /*game(gamenumber,status,starter,tokenplayer,deckontable,restcards,winner)
-gameuser(usernr,gamenumber,status)
+gameuser(usernr,gamenumber,ordernr,status)
 player(ip,id,name,status)
 playercards(player,game,cards)
 gamemove(game,player,cards,time)
@@ -79,7 +79,7 @@ $app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {
 	$result = $db->player->insert($newplayer);
         $players=$result;
     }
-    returnResult($players);
+    returnResult($app,$players);
    $db=null;
 });
 
@@ -93,7 +93,15 @@ $app->post('/initiategame/:ip',function ($ip) use ($app, $db) {
 	  "status" => $status
 	);
 	$result = $db->game->insert($newgame);
-    returnResult($result);
+        //gameuser(usernr,gamenumber,ordernr,status)
+        $newgameuser=array(
+	  "game" => $nr+1,
+	  "player" => $ip,
+	  "ordernr" => 1,
+	  "status" => $status
+	);
+	$result = $db->gameuser->insert($newgameuser);
+    returnResult($app,$result);
 });
 //curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
 $app->get('/askstartinggames/:ip',function ($ip) use ($app, $db) { 
@@ -107,7 +115,7 @@ $app->get('/askstartinggames/:ip',function ($ip) use ($app, $db) {
         );
       }
 
-    returnResult($games);
+    returnResult($app,$games);
       }
 });
 // run the Slim app
@@ -116,7 +124,7 @@ $app->run();
 /*
 return result as JSON-object
 */
-function returnResult($result){
+function returnResult($app,$result){
     $app->response()->header("Content-Type", "application/json");
 	echo json_encode($result);
 }
