@@ -120,7 +120,7 @@ class CardApi extends \Slim\Slim
    function checkForWinning($gamenr,$cards){
    	$arrcards=json_encode($cards);
    	//if player has 31, then end game
-   	if ($this->getValue($arrcards)==31)//"status", $app->gameState(CardApi::INITIATED)
+   	if ($this->getValue($arrcards)==31)
 	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$app->gameState(CardApi::ENDED)));
    }
    function checkForEndGame($gamenr,$nr){
@@ -130,7 +130,10 @@ class CardApi extends \Slim\Slim
 		var_dump($this->playerState(CardApi::PASS));
 		return ($finduser["status"]==$this->playerState(CardApi::PASS));
    	   }
-   
+   /*
+    * input: array of card-numbers
+    * retturns: value for total of cards
+    */
    function getValue($cards){
    	$cardvalue=array();
 	for ($i=0;$i<count($cards);$i++){
@@ -153,7 +156,10 @@ class CardApi extends \Slim\Slim
 	}
 	return $val;
    }
-   
+   /*
+    * input: card-number
+    * returns: deck of card, and value in points
+    */
    function getCard($card) {
    	$fl=floor(($card-1) / 13);
 	$rm=(($card-1) % 13)+1;
@@ -166,14 +172,10 @@ class CardApi extends \Slim\Slim
 
 // create new Slim instance
 $app = new CardApi();
-//post voor nieuwe en update
-//$db=$app->getDB();
 
-// add new Route 
-$app->get("/", function () {
-    echo "<h1>Hello Slim World</h1>";
-});//
+// add new Routes 
 //identify(ip,naam)
+//test with curl:
 //curl  -X POST http://127.0.0.1/anton/cardapi/identify/myip/anton
 //of
 //curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://127.0.0.1/anton/cardapi/identify/myip/hans
