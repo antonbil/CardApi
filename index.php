@@ -54,6 +54,8 @@ class CardApi extends \Slim\Slim
 	function gameState($i){
 		return self::$GAME_STATE[$i];
 	}
+	const PLAYING = 0;
+	const PASS = 1;
 	private static $PLAYER_STATE = ['playing', 'pass'];
 	function playerState($i){
 		return self::$PLAYER_STATE[$i];
@@ -112,7 +114,7 @@ class CardApi extends \Slim\Slim
 	$nr++;
 	if ($nr>$nr2)$nr=1;
 	$nr=strval($nr);
-	if($this->checkForEndGame($gamenr,$nr)){$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$this->gameState[CardApi::ENDED]));};
+	if($this->checkForEndGame($gamenr,$nr)){$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$this->gameState(CardApi::ENDED)));};
 	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("tokenplayer"=>$nr));
    }
    function checkForWinning($gamenr,$cards){
@@ -124,7 +126,9 @@ class CardApi extends \Slim\Slim
    function checkForEndGame($gamenr,$nr){
    	//if player has passed in previous, then end game
 		$finduser=$this->getDB()->gameuser->where(array("game" => $gamenr, "ordernr" => $nr))->fetch();
-		return ($finduser["status"]==$this->playerState[1]);
+		var_dump($finduser["status"]);
+		var_dump($this->playerState(CardApi::PASS));
+		return ($finduser["status"]==$this->playerState(CardApi::PASS));
    	   }
    
    function getValue($cards){
@@ -269,7 +273,7 @@ $app->get('/getcard/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 });*/
 //returns 1 if ip has token, 0 otherwise.
 //swaps $cardnumberin for $cardnumberout
-$app->post('/pushcard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip, $gamenr, $cardnumberin,$cardnumberout) use ($app) {
+$app->post('/exchangecard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip, $gamenr, $cardnumberin,$cardnumberout) use ($app) {
 	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$app->gameState(CardApi::RUNNING)))->fetch();
 	$result="0";
     if ($findgame){
@@ -311,7 +315,7 @@ $app->post('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 		if (!($token==$finduser["ordernr"])){$app->returnError("player $ip does not have token");return;}
 		$cardsontable=$finduser["cards"];
 		$cards=$findgame["deckontable"];
-		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("cards"=>$cards,"status"=>$app->playerState(1)));
+		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("cards"=>$cards,"status"=>$app->playerState(CardApi::PASS)));
 		$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
 		$app->checkForWinning($gamenr,$cards);
 		$app->nextMove($gamenr,$token);
@@ -329,7 +333,7 @@ $app->post('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
      	$token=$findgame["tokenplayer"];
 		$finduser=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
 		if (!($token==$finduser["ordernr"])){$app->returnError("player $ip does not have token");return;}
-		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("status"=>$app->playerState(1)));
+		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("status"=>$app->playerState(CardApi::PASS)));
 		$app->checkForWinning($gamenr,$cards);//not necessary!?
 		$app->nextMove($gamenr,$token);
 		$result=1;
