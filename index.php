@@ -44,12 +44,19 @@ require 'vendor/slim/slim/Slim/Slim.php';
 /*
  * 
  */
-class CardApi extends \Slim\Slim
+class CardApi extends \Slim\Slim 
 {
 	private $db;
+	const INITIATED = 0;
+	const RUNNING = 1;
+	const ENDED = 2;
 	private static $GAME_STATE = ['initiated', 'running','ended'];
 	function gameState($i){
 		return self::$GAME_STATE[$i];
+	}
+	private static $PLAYER_STATE = ['playing', 'pass'];
+	function playerState($i){
+		return self::$PLAYER_STATE[$i];
 	}
 	/*
 	return result as JSON-object
@@ -105,7 +112,50 @@ class CardApi extends \Slim\Slim
 	$nr++;
 	if ($nr>$nr2)$nr=1;
 	$nr=strval($nr);
+	if($this->checkForEndGame($gamenr,$nr)){$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$this->gameState[CardApi::ENDED]));};
 	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("tokenplayer"=>$nr));
+   }
+   function checkForWinning($gamenr,$cards){
+   	$arrcards=json_encode($cards);
+   	//if player has 31, then end game
+   	if ($this->getValue($arrcards)==31)//"status", $app->gameState(CardApi::INITIATED)
+	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$app->gameState(CardApi::ENDED)));
+   }
+   function checkForEndGame($gamenr,$nr){
+   	//if player has passed in previous, then end game
+		$finduser=$this->getDB()->gameuser->where(array("game" => $gamenr, "ordernr" => $nr))->fetch();
+		return ($finduser["status"]==$this->playerState[1]);
+   	   }
+   
+   function getValue($cards){
+   	$cardvalue=array();
+	for ($i=0;$i<count($cards);$i++){
+		$cardvalue[]=$this->getCard($cards[$i]);
+	}
+	$val=0;
+	for ($i=0;$i<4;$i++){
+		$hval=0;
+		for ($j=0;$j<count($cardvalue);$j++){
+			if($cardvalue[$j][0]==$i)$hval=$hval+$cardvalue[$j][1];
+		}
+		if ($hval>$val)$val=$hval;
+	}
+	if ($val<31)
+	if(count($cards)>0){
+		$equal=true;
+		for ($i=1;$i<count($cardvalue);$i++)
+			if (!($cardvalue[0][1]==$cardvalue[$i][1])) $equal=false;
+		if ($equal) $val=30.5;
+	}
+	return $val;
+   }
+   
+   function getCard($card) {
+   	$fl=floor(($card-1) / 13);
+	$rm=(($card-1) % 13)+1;
+	if ($rm>10) $rm=10;
+	if ($rm==1) $rm=11;
+	return array($fl,$rm);
    }
 }
 
@@ -154,7 +204,7 @@ $app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app) {
 
 $app->post('/initiategame/:ip' ,function ($ip) use ($app) {
 	$nr=$app->getDB()->game->max("gamenumber");
-	$status=$app->gameState(0);//'initiated';
+	$status=$app->gameState(CardApi::INITIATED);//'initiated';
 	$cards=array();
 	for ($i=1;$i<53;$i++)$cards[]=$i;
 	$newgame=array(
@@ -179,7 +229,7 @@ $app->post('/initiategame/:ip' ,function ($ip) use ($app) {
 	});
 //curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
 $app->get('/askstartinggames/:ip',function ($ip) use ($app) { 
-    $findgames=$app->getDB()->gameuser->where("status", $app->gameState(0));
+    $findgames=$app->getDB()->gameuser->where("status", $app->gameState(CardApi::INITIATED));
     if (count($findgames)>0){
      $games = array();
      foreach ($findgames as $game) {
@@ -214,13 +264,13 @@ $app->get('/gettoken/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 //returns the cards a player has (array of cardnumbers) game is still playing, 0 otherwise 
 $app->get('/gethand/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
-//returns cardnumber which player gets if player has token, 0 otherwise
+/*//returns cardnumber which player gets if player has token, 0 otherwise
 $app->get('/getcard/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
-});
+});*/
 //returns 1 if ip has token, 0 otherwise.
 //swaps $cardnumberin for $cardnumberout
 $app->post('/pushcard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip, $gamenr, $cardnumberin,$cardnumberout) use ($app) {
-	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$app->gameState(1)))->fetch();
+	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$app->gameState(CardApi::RUNNING)))->fetch();
 	$result="0";
     if ($findgame){
      	$token=$findgame["tokenplayer"];
@@ -235,6 +285,7 @@ $app->post('/pushcard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip, $g
 		$cardsontable=$app->addTo($cardnumberout,$cardsontable);
 		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("cards"=>$cards));
 		$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
+		$app->checkForWinning($gamenr,$cards);
 		$app->nextMove($gamenr,$token);
 		$result = 1;
 	} else {$app->returnError("$gamenr not defined or not running");return;}
@@ -251,11 +302,40 @@ $app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 });
 //-swapcards(ip,gamenr) post
 //returns list of cards lying on table if player has token, otherwise error
-$app->get('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->post('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$app->gameState(CardApi::RUNNING)))->fetch();
+	$result="0";
+    if ($findgame){
+     	$token=$findgame["tokenplayer"];
+		$finduser=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
+		if (!($token==$finduser["ordernr"])){$app->returnError("player $ip does not have token");return;}
+		$cardsontable=$finduser["cards"];
+		$cards=$findgame["deckontable"];
+		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("cards"=>$cards,"status"=>$app->playerState(1)));
+		$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
+		$app->checkForWinning($gamenr,$cards);
+		$app->nextMove($gamenr,$token);
+		$result=$cards;
+	} else {$app->returnError("$gamenr not defined or not running");return;}
+    $app->returnResult($result);
+	 
 });
 //-offerpass(ip,gamenr) post
 //returns 1 if player has token, error otherwise
-$app->get('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->post('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$app->gameState(CardApi::RUNNING)))->fetch();
+	$result="0";
+    if ($findgame){
+     	$token=$findgame["tokenplayer"];
+		$finduser=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
+		if (!($token==$finduser["ordernr"])){$app->returnError("player $ip does not have token");return;}
+		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("status"=>$app->playerState(1)));
+		$app->checkForWinning($gamenr,$cards);//not necessary!?
+		$app->nextMove($gamenr,$token);
+		$result=1;
+	} else {$app->returnError("$gamenr not defined or not running");return;}
+    $app->returnResult($result);
+	 
 });
 //-claimwin(ip,gamenr) post
 //returns 1 if player has won, and has token. error otherwise
@@ -276,7 +356,7 @@ $app->get('/getwinnergame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
     $winner = array("winner" => "none");
     if (count($findgame)>0){
      foreach ($findgame as $game) {
-     	if ($game["status"]==$app->gameState(2))
+     	if ($game["status"]==$app->gameState(CardApi::ENDED))
         $winner  = array(
             "winner" => $game["winner"]
         );
@@ -284,6 +364,12 @@ $app->get('/getwinnergame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 
     }
     $app->returnResult($winner);
+});
+
+$app->get('/getvalue/:cards',function ($cards) use ($app) {
+	$parts = explode(",", $cards);
+	$val=$app->getValue($parts);
+	$app->returnResult($val);
 });
 
 // run the Slim app

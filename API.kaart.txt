@@ -28,9 +28,9 @@ Tijdens spel
 returns the ip which has the token for the game, 0 if game not started yet etc.
 -gethand(ip,gamenr) get
 returns the cards a player has (array of cardnumbers) game is still playing, 0 otherwise 
--getcard(ip,gamenr) get
-returns cardnumber which player gets if player has token, 0 otherwise
--pushcard(ip,gamenr,cardnumber) post
+/*-getcard(ip,gamenr) get
+returns cardnumber which player gets if player has token, 0 otherwise*/
+-exchangecard(ip,gamenr,cardnumberin,carnumberout) post
 returns 1 if ip has token, 0 otherwise.
 -getexchange(ip,ipplayer,gamenr) get
 return cardnumber last pushed of player
