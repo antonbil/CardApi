@@ -41,18 +41,27 @@ PRIMARY KEY (game, player,time));');*/
 require "notorm/NotORM.php";
 require 'vendor/slim/slim/Slim/Slim.php';
 \Slim\Slim::registerAutoloader();
+/*
+ * 
+ */
 class CardApi extends \Slim\Slim
 {
 	private $db;
-	static $GAME_STATE = ['initiated', 'running','ended'];
+	private static $GAME_STATE = ['initiated', 'running','ended'];
 	function gameState($i){
 		return self::$GAME_STATE[$i];
 	}
 	/*
 	return result as JSON-object
 	*/
-	function returnResult($app,$result){
-	    $app->response()->header("Content-Type", "application/json");
+	function returnResult($result){
+	    $this->response()->header("Content-Type", "application/json");
+		echo json_encode($result);
+	}
+	
+	function returnError($error){
+		$result=array("error"=>$error);
+	    $this->response()->header("Content-Type", "application/json");
 		echo json_encode($result);
 	}
 	
@@ -60,9 +69,11 @@ class CardApi extends \Slim\Slim
 	{
 		return $this->db;
 	}
+	/*
+	 * initialize db to be used for storage in app
+	 */
 	function initDB()
 	{
-		
 		$pdo = new PDO('sqlite:mysqlitedb.db');
 		$this->db = new NotORM($pdo);
 		//return $db;
@@ -70,6 +81,31 @@ class CardApi extends \Slim\Slim
    function __construct() {
        parent::__construct();
        $this->initDB();
+   }
+   function removeFrom($cardnumber,$cards){
+   	$arrcards=json_decode($cards);
+	$nr=count($arrcards);
+    for ($i = 0; $i < count($arrcards); ++$i) {
+        if ($arrcards[$i]==$cardnumber){$nr=$i;};
+    }
+	if ($nr==count($arrcards))return "error";
+	array_splice($arrcards, $nr, 1);
+   	return json_encode($arrcards);
+   }
+   function addTo($cardnumber,$cards){
+   	$arrcards=json_decode($cards);
+	if (!is_int ($cardnumber))$cardnumber=intval($cardnumber);
+	$arrcards[]=$cardnumber;
+   	return json_encode($arrcards);
+   }
+   
+   function nextMove($gamenr,$nr){
+	$findgame=$this->getDB()->game->where(array("gamenumber"=>$gamenr))->fetch();
+	$nr2=$this->getDB()->gameuser->where(array("game" => $gamenr))->max("ordernr");
+	$nr++;
+	if ($nr>$nr2)$nr=1;
+	$nr=strval($nr);
+	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("tokenplayer"=>$nr));
    }
 }
 
@@ -112,7 +148,7 @@ $app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app) {
 	$result = $app->getDB()->player->insert($newplayer);
         $players=$result;
     }
-    $app->returnResult($app,$players);
+    $app->returnResult($players);
    $db=null;
 });
 
@@ -139,7 +175,7 @@ $app->post('/initiategame/:ip' ,function ($ip) use ($app) {
 		"cards" => json_encode(array())
 	);
 	$result2 = $app->getDB()->gameuser->insert($newgameuser);
-	$app->returnResult($app,$result);
+	$app->returnResult($result);
 	});
 //curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
 $app->get('/askstartinggames/:ip',function ($ip) use ($app) { 
@@ -153,7 +189,7 @@ $app->get('/askstartinggames/:ip',function ($ip) use ($app) {
         );
       }
 
-    $app->returnResult($app,$games);
+    $app->returnResult($games);
       }
 });
 //returns list of ip for all players who have applied for a game
@@ -162,55 +198,76 @@ $app->get('/askdatastartinggame/:ip/:gamenr',function ($ip, $gamenr) use ($app) 
 
 
 //returns name of ipplayer if ip is known to system, otherwise -1
-$app->get('/getplayerinfo/:ip/:ipplayer',function ($ip, $ipplayer) use ($app, $db) { 
+$app->get('/getplayerinfo/:ip/:ipplayer',function ($ip, $ipplayer) use ($app) { 
 });
 
 //returns 1 if game still starting, and not full, and ip has not applied for this game yet. Otherwise 0.
-$app->get('/applyforgame/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/applyforgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
-$app->get('/startgame/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/startgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //returns the ip which has the token for the game, 0 if game not started yet etc.
-$app->get('/gettoken/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/gettoken/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //returns the cards a player has (array of cardnumbers) game is still playing, 0 otherwise 
-$app->get('/gethand/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/gethand/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //returns cardnumber which player gets if player has token, 0 otherwise
-$app->get('/getcard/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/getcard/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //returns 1 if ip has token, 0 otherwise.
-$app->get('/pushcard/:ip/:gamenr/:cardnumber',function ($ip, $gamenr, $cardnumber) use ($app, $db) { 
+//swaps $cardnumberin for $cardnumberout
+$app->post('/pushcard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip, $gamenr, $cardnumberin,$cardnumberout) use ($app) {
+	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$app->gameState(1)))->fetch();
+	$result="0";
+    if ($findgame){
+     	$token=$findgame["tokenplayer"];
+		$finduser=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
+		if (!($token==$finduser["ordernr"])){$app->returnError("player $ip does not have token");return;}
+		$cards=$finduser["cards"];
+		$cards=$app->removeFrom($cardnumberout,$cards);
+		if ($cards=="error"){$app->returnError("$cardnumberout not part of cards of player");return;}
+		$cardsontable=$app->removeFrom($cardnumberin,$findgame["deckontable"]);
+		if ($cardsontable=="error"){$app->returnError("$cardnumberin not part of deckontable");return;}
+		$cards=$app->addTo($cardnumberin,$cards);
+		$cardsontable=$app->addTo($cardnumberout,$cardsontable);
+		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("cards"=>$cards));
+		$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
+		$app->nextMove($gamenr,$token);
+		$result = 1;
+	} else {$app->returnError("$gamenr not defined or not running");return;}
+    $app->returnResult($result);
+	 
 });
 //-getexchange(ip,ipplayer,gamenr) get
 //return cardnumber last pushed of player
-$app->get('/getexchange/:ip/:gamenr/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app, $db) { 
+$app->get('/getexchange/:ip/:gamenr/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) { 
 });
 //-getdeckontable(ip,gamenr) get
 //returns list of cardnumbers lying open to see
-$app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //-swapcards(ip,gamenr) post
 //returns list of cards lying on table if player has token, otherwise error
-$app->get('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //-offerpass(ip,gamenr) post
 //returns 1 if player has token, error otherwise
-$app->get('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //-claimwin(ip,gamenr) post
 //returns 1 if player has won, and has token. error otherwise
-$app->get('/claimwin/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/claimwin/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //-getstategame(ip,gamenr) get
 //returns one of: initiated,started,ended
-$app->get('/getstategame/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/getstategame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 //-getresultgame(ip,gamenr, ipplayer) get
 //returns list of cards for ipplayer if game is ended.
-$app->get('/getresultgame/:ip/:gamenr:/ipplayer',function ($ip, $gamenr, $ipplayer) use ($app, $db) { 
+$app->get('/getresultgame/:ip/:gamenr:/ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) { 
 });
 //-getwinnergame(ip,gamenr) get
 //returns ip of winning player if game is ended
@@ -226,7 +283,7 @@ $app->get('/getwinnergame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
       }
 
     }
-    $app->returnResult($app,$winner);
+    $app->returnResult($winner);
 });
 
 // run the Slim app
