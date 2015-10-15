@@ -43,6 +43,7 @@ require 'vendor/slim/slim/Slim/Slim.php';
 \Slim\Slim::registerAutoloader();
 class CardApi extends \Slim\Slim
 {
+	private $db;
 	static $GAME_STATE = ['initiated', 'running','ended'];
 	function gameState($i){
 		return self::$GAME_STATE[$i];
@@ -57,18 +58,27 @@ class CardApi extends \Slim\Slim
 	
 	function getDB()
 	{
+		return $this->db;
+	}
+	function initDB()
+	{
 		
 		$pdo = new PDO('sqlite:mysqlitedb.db');
-		$db = new NotORM($pdo);
-		return $db;
+		$this->db = new NotORM($pdo);
+		//return $db;
 	}
+   function __construct() {
+       parent::__construct();
+       $this->initDB();
+   }
 }
+
+
 // create new Slim instance
 $app = new CardApi();
-//propel is een alternatief voor notorm
-//put voor nieuwe en update
-//syncen van namen velden en api-parameters
-$db=$app->getDB();
+//post voor nieuwe en update
+//$db=$app->getDB();
+
 // add new Route 
 $app->get("/", function () {
     echo "<h1>Hello Slim World</h1>";
@@ -77,8 +87,8 @@ $app->get("/", function () {
 //curl  -X POST http://127.0.0.1/anton/cardapi/identify/myip/anton
 //of
 //curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://127.0.0.1/anton/cardapi/identify/myip/hans
-$app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {   
-    $findplayer=$db->player->where("ip", $ip);
+$app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app) {   
+    $findplayer=$app->getDB()->player->where("ip", $ip);
 //var_dump($findplayer);
     if (count($findplayer)>0){
      $players = array();
@@ -99,15 +109,15 @@ $app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {
 	  "name" => $naam,
 	  "status" => $status,
 	);
-	$result = $db->player->insert($newplayer);
+	$result = $app->getDB()->player->insert($newplayer);
         $players=$result;
     }
     $app->returnResult($app,$players);
    $db=null;
 });
 
-$app->post('/initiategame/:ip' ,function ($ip) use ($app, $db) {
-	$nr=$db->game->max("gamenumber");
+$app->post('/initiategame/:ip' ,function ($ip) use ($app) {
+	$nr=$app->getDB()->game->max("gamenumber");
 	$status=$app->gameState(0);//'initiated';
 	$cards=array();
 	for ($i=1;$i<53;$i++)$cards[]=$i;
@@ -119,7 +129,7 @@ $app->post('/initiategame/:ip' ,function ($ip) use ($app, $db) {
 		"restcards" => json_encode($cards),
 		"deckontable" => json_encode(array())
 	);
-	$result = $db->game->insert($newgame);
+	$result = $app->getDB()->game->insert($newgame);
 	//gameuser(usernr,gamenumber,ordernr,status)
 	$newgameuser=array(
 		"game" => $nr+1,
@@ -128,12 +138,12 @@ $app->post('/initiategame/:ip' ,function ($ip) use ($app, $db) {
 		"status" => $status,
 		"cards" => json_encode(array())
 	);
-	$result2 = $db->gameuser->insert($newgameuser);
+	$result2 = $app->getDB()->gameuser->insert($newgameuser);
 	$app->returnResult($app,$result);
 	});
 //curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
-$app->get('/askstartinggames/:ip',function ($ip) use ($app, $db) { 
-    $findgames=$db->gameuser->where("status", $app->gameState(0));
+$app->get('/askstartinggames/:ip',function ($ip) use ($app) { 
+    $findgames=$app->getDB()->gameuser->where("status", $app->gameState(0));
     if (count($findgames)>0){
      $games = array();
      foreach ($findgames as $game) {
@@ -147,7 +157,7 @@ $app->get('/askstartinggames/:ip',function ($ip) use ($app, $db) {
       }
 });
 //returns list of ip for all players who have applied for a game
-$app->get('/askdatastartinggame/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/askdatastartinggame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
 });
 
 
@@ -204,12 +214,12 @@ $app->get('/getresultgame/:ip/:gamenr:/ipplayer',function ($ip, $gamenr, $ipplay
 });
 //-getwinnergame(ip,gamenr) get
 //returns ip of winning player if game is ended
-$app->get('/getwinnergame/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) {
-	$findgame=$db->game->where("gamenumber",$gamenr);
+$app->get('/getwinnergame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);
     $winner = array("winner" => "none");
     if (count($findgame)>0){
      foreach ($findgame as $game) {
-     	if ($game["status"]==$GLOBALS['GAME_STATE'][2])
+     	if ($game["status"]==$app->gameState(2))
         $winner  = array(
             "winner" => $game["winner"]
         );
