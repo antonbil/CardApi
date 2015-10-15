@@ -38,16 +38,37 @@ time STRING,
 cards STRING,
 PRIMARY KEY (game, player,time));');*/
 
-global $GAME_STATE;
-$GAME_STATE = ['initiated', 'running','ended'];
+require "notorm/NotORM.php";
 require 'vendor/slim/slim/Slim/Slim.php';
 \Slim\Slim::registerAutoloader();
+class CardApi extends \Slim\Slim
+{
+	static $GAME_STATE = ['initiated', 'running','ended'];
+	function gameState($i){
+		return self::$GAME_STATE[$i];
+	}
+	/*
+	return result as JSON-object
+	*/
+	function returnResult($app,$result){
+	    $app->response()->header("Content-Type", "application/json");
+		echo json_encode($result);
+	}
+	
+	function getDB()
+	{
+		
+		$pdo = new PDO('sqlite:mysqlitedb.db');
+		$db = new NotORM($pdo);
+		return $db;
+	}
+}
 // create new Slim instance
-$app = new \Slim\Slim();
+$app = new CardApi();
 //propel is een alternatief voor notorm
 //put voor nieuwe en update
 //syncen van namen velden en api-parameters
-$db=getDB();
+$db=$app->getDB();
 // add new Route 
 $app->get("/", function () {
     echo "<h1>Hello Slim World</h1>";
@@ -81,38 +102,38 @@ $app->post('/identify/:ip/:naam',function ($ip,$naam) use ($app, $db) {
 	$result = $db->player->insert($newplayer);
         $players=$result;
     }
-    returnResult($app,$players);
+    $app->returnResult($app,$players);
    $db=null;
 });
 
-$app->post('/initiategame/:ip',function ($ip) use ($app, $db) {  
-    $nr=$db->game->max("gamenumber");
-	$status=$GLOBALS['GAME_STATE'][0];//'initiated';
-        $cards=array();
-        for ($i=1;$i<53;$i++)$cards[]=$i;
-        $newgame=array(
-	  "gamenumber" => $nr+1,
-	  "starter" => $ip,
-	  "tokenplayer" => 1,
-	  "status" => $status,
-          "restcards" => json_encode($cards),
-          "deckontable" => json_encode(array())
+$app->post('/initiategame/:ip' ,function ($ip) use ($app, $db) {
+	$nr=$db->game->max("gamenumber");
+	$status=$app->gameState(0);//'initiated';
+	$cards=array();
+	for ($i=1;$i<53;$i++)$cards[]=$i;
+	$newgame=array(
+		"gamenumber" => $nr+1,
+		"starter" => $ip,
+		"tokenplayer" => 1,
+		"status" => $status,
+		"restcards" => json_encode($cards),
+		"deckontable" => json_encode(array())
 	);
 	$result = $db->game->insert($newgame);
-        //gameuser(usernr,gamenumber,ordernr,status)
-        $newgameuser=array(
-	  "game" => $nr+1,
-	  "player" => $ip,
-	  "ordernr" => 1,
-	  "status" => $status,
-          "cards" => json_encode(array())
+	//gameuser(usernr,gamenumber,ordernr,status)
+	$newgameuser=array(
+		"game" => $nr+1,
+		"player" => $ip,
+		"ordernr" => 1,
+		"status" => $status,
+		"cards" => json_encode(array())
 	);
 	$result2 = $db->gameuser->insert($newgameuser);
-    returnResult($app,$result);
-});
+	$app->returnResult($app,$result);
+	});
 //curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
 $app->get('/askstartinggames/:ip',function ($ip) use ($app, $db) { 
-    $findgames=$db->gameuser->where("status", $GLOBALS['GAME_STATE'][0]);
+    $findgames=$db->gameuser->where("status", $app->gameState(0));
     if (count($findgames)>0){
      $games = array();
      foreach ($findgames as $game) {
@@ -122,7 +143,7 @@ $app->get('/askstartinggames/:ip',function ($ip) use ($app, $db) {
         );
       }
 
-    returnResult($app,$games);
+    $app->returnResult($app,$games);
       }
 });
 //returns list of ip for all players who have applied for a game
@@ -183,27 +204,23 @@ $app->get('/getresultgame/:ip/:gamenr:/ipplayer',function ($ip, $gamenr, $ipplay
 });
 //-getwinnergame(ip,gamenr) get
 //returns ip of winning player if game is ended
-$app->get('/getwinnergame/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) { 
+$app->get('/getwinnergame/:ip/:gamenr',function ($ip, $gamenr) use ($app, $db) {
+	$findgame=$db->game->where("gamenumber",$gamenr);
+    $winner = array("winner" => "none");
+    if (count($findgame)>0){
+     foreach ($findgame as $game) {
+     	if ($game["status"]==$GLOBALS['GAME_STATE'][2])
+        $winner  = array(
+            "winner" => $game["winner"]
+        );
+      }
+
+    }
+    $app->returnResult($app,$winner);
 });
 
 // run the Slim app
 $app->run();
 
-/*
-return result as JSON-object
-*/
-function returnResult($app,$result){
-    $app->response()->header("Content-Type", "application/json");
-	echo json_encode($result);
-}
 
-function getDB()
-{
-
-require "notorm/NotORM.php";
-
-$pdo = new PDO('sqlite:mysqlitedb.db');
-$db = new NotORM($pdo);
-return $db;
-}
 ?> 
