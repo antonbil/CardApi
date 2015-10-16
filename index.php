@@ -197,17 +197,19 @@ class CardApi extends \Slim\Slim
     * If so, return player , game-instance and token
     * if not, generate error messages, and return false;
     */
-function checkgameplayertoken($ip, $gamenr){
-	$findgame=$this->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$this->gameState(CardApi::RUNNING)))->fetch();
+function checkgameplayertoken($ip, $gamenr,$status){
+	$findgame=$this->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$status))->fetch();
 	$result="0";
     if ($findgame){
      	$token=$findgame["tokenplayer"];
 		$finduser=$this->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
 		if (!($token==$finduser["ordernr"])){$this->returnError("player $ip does not have token");return false;}
-	} else {$this->returnError("$gamenr not defined or not running");return false;}
+	} else {$this->returnError("$gamenr not defined or not $status");return false;}
 	return array("findgame"=>$findgame,"finduser"=>$finduser,"token"=>$token);
 }}
-
+function checkgameplayertokenRunning($ip, $gamenr){
+	checkgameplayertoken($ip, $gamenr,$this->gameState(CardApi::RUNNING));
+}
 
 // create new Slim instance
 $app = new CardApi();
@@ -296,11 +298,67 @@ $app->get('/getplayerinfo/:ip/:ipplayer',function ($ip, $ipplayer) use ($app) {
 });
 
 //returns 1 if game still starting, and not full, and ip has not applied for this game yet. Otherwise 0.
-$app->get('/applyforgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->post('/applyforgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	
+	//check if user exists
+    $findplayer=$app->getDB()->player->where(array("ip" => $ip));
+	if (!(count($findplayer)>0)){$app->returnError("no player with $ip");return;}
+	//check if game already initated
+    $findusers=$app->getDB()->gameuser->where(array("game" => $gamenr));
+	if (!(count($findusers)>0)){$app->returnError("game $gamenr not initiated yet");return;}
+	//check if user not already applied for this game
+    $findusers=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip))->fetch();
+	if ((count($findusers)>1)){$app->returnError("$ip already part of game $gamenr");return;}
+	$nr=$app->getDB()->gameuser->max("ordernr");
+	$status=$app->gameState(CardApi::PLAYING);//'initiated';
+		$newgameuser=array(
+		"game" => $gamenr,
+		"player" => $ip,
+		"ordernr" => $nr+1,
+		"status" => $status,
+		"cards" => json_encode(array())
+	);
+	$result2 = $app->getDB()->gameuser->insert($newgameuser);
+	$app->returnResult(1); 
 });
 
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
-$app->get('/startgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->post('/startgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::INITIATED));
+	if (!$gameplayer)return;
+	if (!($gameplayer["token"]==1)){$app->returnError("$ip has not initiated game $gamenr");return;}
+	//get all players
+    $findusers=$app->getDB()->gameuser->where("game", $gamenr);
+		//for all players: give them three cards
+		$cards=$gameplayer["findgame"]["restcards"];
+		//var_dump($findusers);
+    foreach ($findusers as $user) {
+      //for ($i=0;$i<count($findusers);$i++) {
+          //$user=$findusers[$i];
+		  $playercards=array();
+		  for ($j=1;$j<4;$j++){
+		  	$mycards=json_decode($cards);
+			  $number=rand ( 0 , count($mycards)-1 );
+			  $cardnumber=$mycards[$number];
+			  $playercards[]=$cardnumber;
+		  	$cards=$app->removeFrom($cardnumber,$cards);
+		  }
+		  //save $playercards to db
+		  $app->getDB()->gameuser->insert_update(array("player"=>$user["player"],"game"=>$user["game"]), array(), array("cards"=>json_encode($playercards)));
+	   }
+	  //give the table cards, and save it in game
+	  $deckcards=array();
+	  for ($j=1;$j<4;$j++){
+	  	  $mycards=json_decode($cards);
+		  $number=rand ( 0 , count($mycards)-1 );
+		  $cardnumber=$mycards[$number];
+		  $deckcards[]=$cardnumber;
+	  	  $cards=$app->removeFrom($cardnumber,$cards);
+	  }
+	  //set token = 1 in game, and status=running
+	  $result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>json_encode($deckcards),"restcards"=>$cards,"tokenplayer"=>1,
+		"status"=>$app->gameState(CardApi::RUNNING)));
+	  $app->returnResult(1);
 });
 //returns the ip which has the token for the game, 0 if game not started yet etc.
 $app->get('/gettoken/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
@@ -314,7 +372,7 @@ $app->get('/getcard/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 //returns 1 if ip has token, 0 otherwise.
 //swaps $cardnumberin for $cardnumberout
 $app->post('/exchangecard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip, $gamenr, $cardnumberin,$cardnumberout) use ($app) {
-	$gameplayer=$app->checkgameplayertoken($ip, $gamenr);
+	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
 	if (!$gameplayer)return;
 	
 	$cards=$gameplayer["finduser"]["cards"];
@@ -345,7 +403,7 @@ $app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 //returns list of cards lying on table if player has token, otherwise error
 $app->post('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 	$result="0";
-	$gameplayer=$app->checkgameplayertoken($ip, $gamenr);
+	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
 	if (!$gameplayer)return;
 	
 	$cardsontable=$gameplayer["finduser"]["cards"];
@@ -363,7 +421,7 @@ $app->post('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 //returns 1 if player has token, error otherwise
 $app->post('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 	$result="0";
-	$gameplayer=$app->checkgameplayertoken($ip, $gamenr);
+	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
 	if (!$gameplayer)return;
 	$app->getDB()->gameuser->insert_update(array("player"=>$gameplayer["finduser"]["player"],"game"=>$gameplayer["finduser"]["game"]), array(), array("status"=>$app->playerState(CardApi::PASS)));
 	//cards not changed, so always continue with next move
