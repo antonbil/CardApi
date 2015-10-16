@@ -23,6 +23,7 @@ gameuser (player STRING,
 game STRING,
 status STRING,
 cards STRING,
+ordernr INTEGER,
 PRIMARY KEY (player, game));');
 //player(ip,id,name,status)
 $db->exec('CREATE TABLE IF NOT EXISTS
@@ -35,8 +36,9 @@ $db->exec('CREATE TABLE IF NOT EXISTS
 gamemove (game STRING,
 player STRING,
 time STRING,
-cards STRING,
-PRIMARY KEY (game, player,time));');*/
+cardsin STRING,
+cardsout STRING,
+ * PRIMARY KEY (game, player,time));');*/
 
 require "notorm/NotORM.php";
 require 'vendor/slim/slim/Slim/Slim.php';
@@ -117,17 +119,23 @@ class CardApi extends \Slim\Slim
 	if($this->checkForEndGame($gamenr,$nr)){$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$this->gameState(CardApi::ENDED)));};
 	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("tokenplayer"=>$nr));
    }
+   /*
+    * returns true if current move is winning
+    * if winning status of game is updated in db
+    */
    function checkForWinning($gamenr,$cards){
+   	$result = false;
    	$arrcards=json_encode($cards);
    	//if player has 31, then end game
-   	if ($this->getValue($arrcards)==31)
-	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$app->gameState(CardApi::ENDED)));
+   	if ($this->getValue($arrcards)==31){
+		$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$app->gameState(CardApi::ENDED)));
+		$result=true;
+	}
+	return $result;
    }
    function checkForEndGame($gamenr,$nr){
    	//if player has passed in previous, then end game
 		$finduser=$this->getDB()->gameuser->where(array("game" => $gamenr, "ordernr" => $nr))->fetch();
-		var_dump($finduser["status"]);
-		var_dump($this->playerState(CardApi::PASS));
 		return ($finduser["status"]==$this->playerState(CardApi::PASS));
    	   }
    /*
@@ -166,6 +174,17 @@ class CardApi extends \Slim\Slim
 	if ($rm>10) $rm=10;
 	if ($rm==1) $rm=11;
 	return array($fl,$rm);
+   }
+   
+   function addMove($game,$player,$time,$cardsin,$cardsout){
+	$newmoveuser=array(
+		"game" => $game,
+		"player" => $player,
+		"time" => $time,
+		"cardsin" => $cardsin,
+		"cardsout" => $cardsout
+	);
+	return $this->getDB()->gamemove->insert($newmoveuser);
    }
 }
 
@@ -245,8 +264,8 @@ $app->get('/askstartinggames/:ip',function ($ip) use ($app) {
         );
       }
 
-    $app->returnResult($games);
-      }
+      $app->returnResult($games);
+    }
 });
 //returns list of ip for all players who have applied for a game
 $app->get('/askdatastartinggame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
@@ -291,8 +310,9 @@ $app->post('/exchangecard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip
 		$cardsontable=$app->addTo($cardnumberout,$cardsontable);
 		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("cards"=>$cards));
 		$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
-		$app->checkForWinning($gamenr,$cards);
-		$app->nextMove($gamenr,$token);
+		if (!$app->checkForWinning($gamenr,$cards))
+			$app->nextMove($gamenr,$token);
+		$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(intval ($cardnumberin))),json_encode(array(intval ($cardnumberout))));
 		$result = 1;
 	} else {$app->returnError("$gamenr not defined or not running");return;}
     $app->returnResult($result);
@@ -319,8 +339,9 @@ $app->post('/swapcards/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 		$cards=$findgame["deckontable"];
 		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("cards"=>$cards,"status"=>$app->playerState(CardApi::PASS)));
 		$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
-		$app->checkForWinning($gamenr,$cards);
-		$app->nextMove($gamenr,$token);
+		if (!$app->checkForWinning($gamenr,$cards))
+			$app->nextMove($gamenr,$token);
+		$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),$cards,$cardsontable);
 		$result=$cards;
 	} else {$app->returnError("$gamenr not defined or not running");return;}
     $app->returnResult($result);
@@ -336,8 +357,10 @@ $app->post('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 		$finduser=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
 		if (!($token==$finduser["ordernr"])){$app->returnError("player $ip does not have token");return;}
 		$app->getDB()->gameuser->insert_update(array("player"=>$finduser["player"],"game"=>$finduser["game"]), array(), array("status"=>$app->playerState(CardApi::PASS)));
-		$app->checkForWinning($gamenr,$cards);//not necessary!?
-		$app->nextMove($gamenr,$token);
+		//if (!$app->checkForWinning($gamenr,$cards))
+			//not necessary!? cards are not changed, so winning should also not be changed
+			$app->nextMove($gamenr,$token);
+		$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array()),json_encode(array()));
 		$result=1;
 	} else {$app->returnError("$gamenr not defined or not running");return;}
     $app->returnResult($result);
