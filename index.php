@@ -121,7 +121,10 @@ class CardApi extends \Slim\Slim
 	$nr++;
 	if ($nr>$nr2)$nr=1;
 	$nr=strval($nr);
-	if($this->checkForEndGame($gamenr,$nr)){$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$this->gameState(CardApi::ENDED)));};
+	if($this->checkForEndGame($gamenr,$nr)){
+		$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$this->gameState(CardApi::ENDED)));
+		$this->getWinner($gamenr);
+	};
 	$result = $this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("tokenplayer"=>$nr));
    }
    /*
@@ -130,10 +133,11 @@ class CardApi extends \Slim\Slim
     */
    function checkForWinning($gamenr,$cards){
    	$result = false;
-   	$arrcards=json_encode($cards);
+   	$arrcards=json_decode($cards);
    	//if player has 31, then end game
    	if ($this->getValue($arrcards)==31){
 		$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$app->gameState(CardApi::ENDED)));
+		$this->getWinner($gamenr);
 		$result=true;
 	}
 	return $result;
@@ -180,7 +184,30 @@ class CardApi extends \Slim\Slim
 	if ($rm==1) $rm=11;
 	return array($fl,$rm);
    }
-   
+    
+    /*
+    * calculates the winner if game is ended
+    */
+   function getWinner($gamenr){
+   		//get all players
+    $findusers=$this->getDB()->gameuser->where("game", $gamenr);
+	$userwin=null;
+	$max=0;
+	$values=array();
+    foreach ($findusers as $user) {
+    	$cards=$user["cards"];
+		$val=$this->getValue(json_decode($cards));
+		if ($val>$max){
+			$max=$val;
+			$userwin=$user;
+		}
+		$values[]=array("player"=>$user["player"],"value"=>$val);
+	}
+	$ip1=$userwin["player"];
+	$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("winner"=>$ip1));
+	return array("winner"=>$ip1,"winningvalue"=>$max,"data"=>$values); 
+	
+   }
    function addMove($game,$player,$time,$cardsin,$cardsout){
 	$newmoveuser=array(
 		"game" => $game,
@@ -197,18 +224,19 @@ class CardApi extends \Slim\Slim
     * If so, return player , game-instance and token
     * if not, generate error messages, and return false;
     */
-function checkgameplayertoken($ip, $gamenr,$status){
+function checkgameplayertoken($ip, $gamenr,$status,$checkToken){
 	$findgame=$this->getDB()->game->where(array("gamenumber"=>$gamenr,"status"=>$status))->fetch();
 	$result="0";
     if ($findgame){
      	$token=$findgame["tokenplayer"];
 		$finduser=$this->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
-		if (!($token==$finduser["ordernr"])){$this->returnError("player $ip does not have token");return false;}
+		if($checkToken)
+			if (!($token==$finduser["ordernr"])){$this->returnError("player $ip does not have token");return false;}
 	} else {$this->returnError("$gamenr not defined or not $status");return false;}
 	return array("findgame"=>$findgame,"finduser"=>$finduser,"token"=>$token);
 }}
 function checkgameplayertokenRunning($ip, $gamenr){
-	checkgameplayertoken($ip, $gamenr,$this->gameState(CardApi::RUNNING));
+	return checkgameplayertoken($ip, $gamenr,$this->gameState(CardApi::RUNNING),true);
 }
 
 // create new Slim instance
@@ -324,7 +352,7 @@ $app->post('/applyforgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
 $app->post('/startgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
-	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::INITIATED));
+	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::INITIATED),true);
 	if (!$gameplayer)return;
 	if (!($gameplayer["token"]==1)){$app->returnError("$ip has not initiated game $gamenr");return;}
 	//get all players
@@ -392,12 +420,25 @@ $app->post('/exchangecard/:ip/:gamenr/:cardnumberin/:carnumberout',function ($ip
 	 
 });
 //-getexchange(ip,ipplayer,gamenr) get
-//return cardnumber last pushed of player
-$app->get('/getexchange/:ip/:gamenr/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) { 
+//return moves of player
+$app->get('/getexchange/:ip/:gamenr/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) {
+	$findmoves=$app->getDB()->gamemove->where(array("game"=>$gamenr,"player"=>$ipplayer));
+	if (count($findmoves)==0){$app->returnError("player $ipplayer not part of game $gamenr");return;}
+	$moves=array();
+    foreach ($findmoves as $move) {
+    	$moves[]=array("cardsin"=>$move["cardsin"],"cardsout"=>$move["cardsout"]);
+	}
+	$app->returnResult($moves); 
 });
 //-getdeckontable(ip,gamenr) get
 //returns list of cardnumbers lying open to see
-$app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr));
+	if (count($findgame)==0){$app->returnError("no game $gamenr");return;}
+    foreach ($findgame as $game) {
+    	$result=$game["deckontable"];
+	}
+	$app->returnResult($result); 
 });
 //-swapcards(ip,gamenr) post
 //returns list of cards lying on table if player has token, otherwise error
@@ -433,15 +474,33 @@ $app->post('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 });
 //-claimwin(ip,gamenr) post
 //returns 1 if player has won, and has token. error otherwise
-$app->get('/claimwin/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->post('/claimwin/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::ENDED),true);
+	if (!$gameplayer)return;
+	//get all players
+	$app->returnResult($app->getWinner($gamenr));
 });
 //-getstategame(ip,gamenr) get
 //returns one of: initiated,started,ended
-$app->get('/getstategame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->get('/getstategame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);
+	$result="";
+    if (count($findgame)>0){
+     foreach ($findgame as $game) {
+     	$result=$game["status"];
+	 }
+	} else {$app->returnError("game $gamenr not defined");return;}
+    $app->returnResult($result);
 });
 //-getresultgame(ip,gamenr, ipplayer) get
 //returns list of cards for ipplayer if game is ended.
-$app->get('/getresultgame/:ip/:gamenr:/ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) { 
+$app->get('/getresultgame/:ip/:gamenr/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) {
+	$gameplayer=$app->checkgameplayertoken($ipplayer, $gamenr,$app->gameState(CardApi::ENDED),false);
+	if (!$gameplayer)return;
+	
+	$cards=$gameplayer["finduser"]["cards"];
+	$app->returnResult($cards);
+	 
 });
 //-getwinnergame(ip,gamenr) get
 //returns ip of winning player if game is ended

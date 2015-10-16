@@ -33,7 +33,7 @@ returns cardnumber which player gets if player has token, 0 otherwise*/
 -exchangecard(ip,gamenr,cardnumberin,carnumberout) post
 returns 1 if ip has token, 0 otherwise.
 -getexchange(ip,ipplayer,gamenr) get
-return cardnumber last pushed of player
+return moves of player for game
 -getdeckontable(ip,gamenr) get
 returns list of cardnumbers lying open to see
 -swapcards(ip,gamenr) post
