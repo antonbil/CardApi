@@ -327,15 +327,29 @@ $app->get('/askstartinggames/:ip',function ($ip) use ($app) {
       }
 
       $app->returnResult($games);
-    }
+    } else $app->returnError("no games defined yet");return;
 });
 //returns list of ip for all players who have applied for a game
-$app->get('/askdatastartinggame/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+$app->get('/askdatastartinggame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
+	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
+	$players=array();
+    foreach ($findplayer as $player) {
+    	$players[]=$player["player"];
+	}
+	$app->returnResult($players); 
 });
 
 
-//returns name of ipplayer if ip is known to system, otherwise -1
-$app->get('/getplayerinfo/:ip/:ipplayer',function ($ip, $ipplayer) use ($app) { 
+//returns name of ipplayer if ip is known to system, otherwise error
+$app->get('/getplayerinfo/:ip/:ipplayer',function ($ip, $ipplayer) use ($app) {
+	$findplayer=$app->getDB()->player->where("ip", $ipplayer);
+	if (count($findplayer)==0){$app->returnError("no player $ipplayer");return;}
+    foreach ($findplayer as $player) {
+    	$result=$player["name"];
+	}
+	$app->returnResult($result); 
+	 
 });
 
 //returns 1 if game still starting, and not full, and ip has not applied for this game yet. Otherwise 0.
@@ -402,8 +416,14 @@ $app->post('/startgame/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 		"status"=>$app->gameState(CardApi::RUNNING)));
 	  $app->returnResult(1);
 });
-//returns the ip which has the token for the game, 0 if game not started yet etc.
-$app->get('/gettoken/:ip/:gamenr',function ($ip, $gamenr) use ($app) { 
+//returns the ip which has the token for the game, error if game not started yet etc.
+$app->get('/gettoken/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+	$findgame=$app->getDB()->game->where("gamenumber", $gamenr);
+	if (count($findgame)==0){$app->returnError("no game $gamenr");return;}
+    foreach ($findgame as $game) {
+    	$result=$game["tokenplayer"];
+	}
+	$app->returnResult($result); 
 });
 //returns the cards a player has (array of cardnumbers) game is still playing, 0 otherwise 
 $app->post('/gethand/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
