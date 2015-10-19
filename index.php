@@ -279,14 +279,20 @@ class CardApi extends \Slim\Slim
 	}
 	function identifyAdmin(){
 		$password=$this->request()->post('password');
+		//var_dump($password);
 		$identifyplayer=$this->getDB()->player->where(array("ip"=>"admin","password"=>$password));
+		$error=false;
 		if (count($identifyplayer)==0){
 			//no admin-password set yet
 			//check for default admin-password
+			$identifyplayer=$this->getDB()->player->where(array("ip"=>"admin"));
+			if (count($identifyplayer)==0){
 			if (!($password==CardApi::ADMINPASSWORD))
-				{$this->returnError("player admin unknown or password ($password) incorrect");return;}
+				$error=true;
+			} else $error=true;//admin with wrong password
 		}
-		return true;
+		if ($error){$this->returnError("player admin unknown or password ($password) incorrect");}
+		return !$error;
 	}
 }//end class CardApi
 
