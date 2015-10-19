@@ -39,9 +39,12 @@ player STRING,
 time STRING,
 cardsin STRING,
 cardsout STRING,
- * PRIMARY KEY (game, player,time));');*/
+PRIMARY KEY (game, player,time));');
+CREATE  TABLE "main"."commercial" ("title" STRING PRIMARY KEY  NOT NULL , "firstline" STRING, "description" STRING, "picture" BLOB)
+ */
 
 require "notorm/NotORM.php";
+//http://www.notorm.com/#api
 require 'vendor/slim/slim/Slim/Slim.php';
 \Slim\Slim::registerAutoloader();
 /*
@@ -49,6 +52,7 @@ require 'vendor/slim/slim/Slim/Slim.php';
  */
 class CardApi extends \Slim\Slim 
 {
+	const ADMINPASSWORD = "CardApi";
 	private $db;
 	const INITIATED = 0;
 	const RUNNING = 1;
@@ -271,6 +275,17 @@ class CardApi extends \Slim\Slim
 		$password=$this->request()->post('password');
 		$identifyplayer=$this->getDB()->player->where(array("ip"=>$ip,"password"=>$password));
 		if (count($identifyplayer)==0){$this->returnError("player $ip unknown or password incorrect");return;}
+		return true;
+	}
+	function identifyAdmin(){
+		$password=$this->request()->post('password');
+		$identifyplayer=$this->getDB()->player->where(array("ip"=>"admin","password"=>$password));
+		if (count($identifyplayer)==0){
+			//no admin-password set yet
+			//check for default admin-password
+			if (!($password==CardApi::ADMINPASSWORD))
+				{$this->returnError("player admin unknown or password ($password) incorrect");return;}
+		}
 		return true;
 	}
 }//end class CardApi
@@ -559,7 +574,6 @@ $app->post('/offerpass/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 //returns 1 if player has won, and has token. error otherwise
 //player can check if game is won. is same as getresultgame, except that this can only be claimed by a player of the game itself.
 $app->post('/claimwin/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
-
 	if (!$app->identifyPlayer($ip)) return;
 	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::ENDED),true);
 	if (!$gameplayer)return;
@@ -612,8 +626,53 @@ $app->get('/getvalue/:cards',function ($cards) use ($app) {
 	$val=$app->getValue($parts);
 	$app->returnResult($val);
 });
+//commercials
+//returns title, first line, description and png.
 //end services
+$app->get('/commercials/:title',function ($title) use ($app) {
+	$commercials = $app->getDB()->commercial->where("title",$title);
+	$result=array();
+    if (count($commercials)>0){
+     foreach ($commercials as $commercial) {
+        $result  = array(
+            "title" => $commercial["title"],
+            "firstline" => $commercial["firstline"],
+            "description" => $commercial["description"],
+            "picture" => $commercial["picture"],
+        );
+      }
 
+    } else {$app->returnError("no commercials with title $title defined");return;} 
+    $app->returnResult($result);
+});
+//commercials
+$app->get('/commercials',function () use ($app) {
+	$commercials = $app->getDB()->commercial->select("title");
+	$result=array();
+    if (count($commercials)>0){
+    	$result=array();
+     foreach ($commercials as $commercial) {
+        $result[]  = array(
+            "title" => $commercial["title"]
+        );
+      }
+
+    } else {$app->returnError("no commercials with title $title defined");return;} 
+    $app->returnResult($result);
+});
+
+//delete game
+//deletes all items for a game
+//available for user admin
+//curl -X DELETE  --data "password=CardApi" http://127.0.0.1/anton/cardapi/players/1230
+$app->delete('/players/:ip', function ($ip) use ($app)  {
+    //Delete player identified by $id
+	if (!$app->identifyAdmin()) return;
+	$app->getDB()->gamemove->where("player",$ip)->delete();
+	$app->getDB()->gameuser->where("player",$ip)->delete();
+	$result=$app->getDB()->player->where("ip",$ip)->delete();
+	$app->returnResult($result);    
+});
 // run the Slim app
 $app->run();
 
