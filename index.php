@@ -294,6 +294,10 @@ class CardApi extends \Slim\Slim
 		if ($error){$this->returnError("player admin unknown or password ($password) incorrect");}
 		return !$error;
 	}
+	function createTable($pdo,$table,$fields){
+		$query="DROP TABLE IF EXISTS $table;CREATE TABLE $table ($fields);";
+		return $pdo->exec($query);
+	}
 }//end class CardApi
 
 // create new Slim instance
@@ -308,7 +312,7 @@ $app = new CardApi();
 //curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://127.0.0.1/anton/cardapi/identify/myip/hans
 $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {   
     $findplayer=$app->getDB()->player->where("ip", $ip);
-	$password=$this->request()->post('password');
+	$password=$app->request()->post('password');
     if (count($findplayer)>0){
      $players = array();
      foreach ($findplayer as $player) {
@@ -679,6 +683,31 @@ $app->delete('/players/:ip', function ($ip) use ($app)  {
 	$result=$app->getDB()->player->where("ip",$ip)->delete();
 	$app->returnResult($result);    
 });
+//curl -X POST  --data "password=CardApi" http://127.0.0.1/anton/cardapi/db/create
+$app->post('/db/create', function () use ($app)  {
+    //Delete player identified by $id
+	if (!$app->identifyAdmin()) return;
+		$pdo = new PDO('sqlite:mysqlitedb.db');
+	//$file_db = new PDO('sqlite:mysqlitedb.db');
+	$app->createTable($pdo,"player", "ip STRING PRIMARY KEY,id STRING,name STRING,status STRING, password STRING");
+	$app->createTable($pdo,"gameuser", "player STRING,game STRING,status STRING,cards STRING,ordernr INTEGER,PRIMARY KEY (player, game)");
+	$app->createTable($pdo,"gamemove", "game STRING,player STRING,time STRING,cardsin STRING,cardsout STRING,PRIMARY KEY (game, player,time)");
+	$app->createTable($pdo,"game", "gamenumber STRING PRIMARY KEY,status STRING,starter STRING,tokenplayer STRING,deckontable STRING,restcards STRING,winner STRING");
+	$app->createTable($pdo,"commercial", "title STRING PRIMARY KEY  NOT NULL , firstline STRING, description STRING, picture BLOB");
+	   // Close file db connection
+    $pdo = null;
+	$app->returnResult("1");
+});
+//curl -X POST  --data "password=CardAPi&passwordplayer=CardAPiNew" http://127.0.0.1/anton/cardapi//players/userid/password
+$app->post('/players/:ip/password', function ($ip) use ($app)  {
+    //Delete player identified by $id
+	if (!$app->identifyAdmin()) return;
+	$passworduser=$app->request()->post('passwordplayer');
+	//$user=$app->getDB()->player->where("ip",$ip);
+	$result=$app->getDB()->player->insert_update(array("ip"=>$ip), array(), array("password"=>$passworduser));
+	$app->returnResult($result);    
+});
+
 // run the Slim app
 $app->run();
 
