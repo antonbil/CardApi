@@ -306,7 +306,7 @@ $app = new CardApi();
 //curl  -X POST http://127.0.0.1/anton/cardapi/identify/myip/anton
 //of
 //curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://127.0.0.1/anton/cardapi/identify/myip/hans
-$app->post('/players/:ip/:naam/add',function ($ip,$naam) use ($app) {   
+$app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {   
     $findplayer=$app->getDB()->player->where("ip", $ip);
 	$password=$this->request()->post('password');
     if (count($findplayer)>0){
@@ -336,7 +336,7 @@ $app->post('/players/:ip/:naam/add',function ($ip,$naam) use ($app) {
    $db=null;
 });
 
-$app->post('/game/:ip/initiate' ,function ($ip) use ($app) {
+$app->post('/games/:ip/initiate' ,function ($ip) use ($app) {
 	if (!$app->identifyPlayer($ip)) return;
 	$nr=$app->getDB()->game->max("gamenumber");
 	$status=$app->gameState(CardApi::INITIATED);//'initiated';
@@ -363,7 +363,7 @@ $app->post('/game/:ip/initiate' ,function ($ip) use ($app) {
 	$app->returnResult($result);
 	});
 //curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
-$app->get('/game/:ip/starting',function ($ip) use ($app) { 
+$app->get('/games/:ip/starting',function ($ip) use ($app) { 
     $findgames=$app->getDB()->gameuser->where("status", $app->gameState(CardApi::INITIATED));
     if (count($findgames)>0){
      $games = array();
@@ -378,7 +378,7 @@ $app->get('/game/:ip/starting',function ($ip) use ($app) {
     } else $app->returnError("no games defined yet");return;
 });
 //returns list of ip for all players who have applied for a game
-$app->get('/game/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
+$app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
 	$players=array();
@@ -390,7 +390,7 @@ $app->get('/game/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 
 
 //returns name of ipplayer if ip is known to system, otherwise error
-$app->get('/game/:ip/:ipplayer/playerinfo',function ($ip, $ipplayer) use ($app) {
+$app->get('/players/:ip/:ipplayer/name',function ($ip, $ipplayer) use ($app) {
 	$findplayer=$app->getDB()->player->where("ip", $ipplayer);
 	if (count($findplayer)==0){$app->returnError("no player $ipplayer");return;}
     foreach ($findplayer as $player) {
@@ -402,7 +402,7 @@ $app->get('/game/:ip/:ipplayer/playerinfo',function ($ip, $ipplayer) use ($app) 
 
 //returns 1 if game still starting, and not full, and ip has not applied for this game yet. Otherwise 0.
 //player applies for game
-$app->post('/game/:ip/:gamenr/apply',function ($ip, $gamenr) use ($app) {
+$app->post('/games/:gamenr/apply/:ip',function ($ip, $gamenr) use ($app) {
 	
 	//check if user exists
 	if (!$app->identifyPlayer($ip)) return;
@@ -427,7 +427,7 @@ $app->post('/game/:ip/:gamenr/apply',function ($ip, $gamenr) use ($app) {
 
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
 //player starts game
-$app->post('/game/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
+$app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 
 	if (!$app->identifyPlayer($ip)) return;
 	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::INITIATED),true);
@@ -468,7 +468,7 @@ $app->post('/game/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 });
 //returns the ip which has the token for the game, error if game not started yet etc.
 //get player-id who has token for game
-$app->get('/game/:ip/:gamenr/token',function ($ip, $gamenr) use ($app) {
+$app->get('/games/:ip/:gamenr/token',function ($ip, $gamenr) use ($app) {
 	$findgame=$app->getDB()->game->where("gamenumber", $gamenr);
 	if (count($findgame)==0){$app->returnError("no game $gamenr");return;}
     foreach ($findgame as $game) {
@@ -477,7 +477,7 @@ $app->get('/game/:ip/:gamenr/token',function ($ip, $gamenr) use ($app) {
 	$app->returnResult($result); 
 });
 //returns the cards a player has (array of cardnumbers) game is still playing, 0 otherwise 
-$app->post('/game/:ip/:gamenr/getcards',function ($ip, $gamenr) use ($app) {
+$app->post('/games/:ip/:gamenr/getcards',function ($ip, $gamenr) use ($app) {
 	
 	if (!$app->identifyPlayer($ip)) return;
 	$gameuser=$app->getDB()->gameuser->where(array("player"=>$ip,"game"=>$gamenr));
@@ -495,7 +495,7 @@ $app->get('/getcard/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 //returns 1 if ip has token, 0 otherwise.
 //swaps $cardnumberin for $cardnumberout
 //move player: exchange one card for another
-$app->post('/game/:ip/:gamenr/play/move/:cardnumberin/:carnumberout',function ($ip, $gamenr, $cardnumberin,$cardnumberout) use ($app) {
+$app->post('/games/:ip/:gamenr/play/move/:cardnumberin/:carnumberout',function ($ip, $gamenr, $cardnumberin,$cardnumberout) use ($app) {
 
 	if (!$app->identifyPlayer($ip)) return;
 	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
@@ -519,7 +519,7 @@ $app->post('/game/:ip/:gamenr/play/move/:cardnumberin/:carnumberout',function ($
 });
 //-getmoves(ip,ipplayer,gamenr) get
 //return moves of player
-$app->get('/getmoves/:ip/:gamenr/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) {
+$app->get('/games/:ip/:gamenr/moves/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) {
 	$findmoves=$app->getDB()->gamemove->where(array("game"=>$gamenr,"player"=>$ipplayer));
 	if (count($findmoves)==0){$app->returnError("player $ipplayer not part of game $gamenr");return;}
 	$moves=array();
@@ -530,7 +530,7 @@ $app->get('/getmoves/:ip/:gamenr/:ipplayer',function ($ip, $gamenr, $ipplayer) u
 });
 //-getdeckontable(ip,gamenr) get
 //returns list of cardnumbers lying open to see
-$app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
+$app->get('/games/:ip/:gamenr/deck',function ($ip, $gamenr) use ($app) {
 	$findgame=$app->getDB()->game->where(array("gamenumber"=>$gamenr));
 	if (count($findgame)==0){$app->returnError("no game $gamenr");return;}
     foreach ($findgame as $game) {
@@ -541,7 +541,7 @@ $app->get('/getdeckontable/:ip/:gamenr',function ($ip, $gamenr) use ($app) {
 //-swapcards(ip,gamenr) post
 //returns list of cards lying on table if player has token, otherwise error
 //move player: swap cards
-$app->post('/game/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
+$app->post('/games/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 
 	if (!$app->identifyPlayer($ip)) return;
 	$result="0";
@@ -562,7 +562,7 @@ $app->post('/game/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 //-offerpass(ip,gamenr) post
 //returns 1 if player has token, error otherwise
 //move player: pass
-$app->post('/game/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
+$app->post('/games/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
 
 	if (!$app->identifyPlayer($ip)) return;
 	$result="0";
@@ -579,7 +579,7 @@ $app->post('/game/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
 //-claimwin(ip,gamenr) post
 //returns 1 if player has won, and has token. error otherwise
 //player can check if game is won. is same as getresultgame, except that this can only be claimed by a player of the game itself.
-$app->post('/usergame/:ip/:gamenr/claimwin',function ($ip, $gamenr) use ($app) {
+$app->post('/games/:ip/:gamenr/claimwin',function ($ip, $gamenr) use ($app) {
 	if (!$app->identifyPlayer($ip)) return;
 	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::ENDED),true);
 	if (!$gameplayer)return;
@@ -600,7 +600,7 @@ $app->get('/games/:ip/:gamenr/state',function ($ip, $gamenr) use ($app) {
 });
 //-getresultgame(ip,gamenr, ipplayer) get
 //returns list of cards for ipplayer if game is ended.
-$app->get('/usergame/:ip/:gamenr/:ipplayer/cards',function ($ip, $gamenr, $ipplayer) use ($app) {
+$app->get('/games/:ip/:gamenr/cards/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) {
 	$gameplayer=$app->checkgameplayertoken($ipplayer, $gamenr,$app->gameState(CardApi::ENDED),false);
 	if (!$gameplayer)return;
 	
@@ -627,7 +627,7 @@ $app->get('/games/:ip/:gamenr/winner',function ($ip, $gamenr) use ($app) {
 
 //getvalue
 //returns value of card. in: cardnumber
-$app->get('/getvalue/:cards',function ($cards) use ($app) {
+$app->get('/cards/:cards/value',function ($cards) use ($app) {
 	$parts = explode(",", $cards);
 	$val=$app->getValue($parts);
 	$app->returnResult($val);
