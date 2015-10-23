@@ -1,6 +1,8 @@
 ## cardapi
 created by Anton Bil
+
 made for course ¨Agile App Development¨
+
 api is meant to act as a means to play the card-game ¨31¨
 
 uses libraries
