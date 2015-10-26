@@ -337,7 +337,7 @@ $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {
 	$result = $app->getDB()->player->insert($newplayer);
         $players=$result;
     }
-    $app->returnResult($newplayer);
+    $app->returnResult($players);
    $db=null;
 });
 
