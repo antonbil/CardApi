@@ -309,7 +309,7 @@ $app = new CardApi();
 //test with curl:
 //curl  -X POST http://127.0.0.1/anton/cardapi/identify/myip/anton
 //of
-//curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://127.0.0.1/anton/cardapi/identify/myip/hans
+//curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://127.0.0.1/anton/cardapi/players/myip/add/hans
 $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {   
     $findplayer=$app->getDB()->player->where("ip", $ip);
 	$password=$app->request()->post('password');
