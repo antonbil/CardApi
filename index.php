@@ -333,10 +333,11 @@ $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {
 	  "status" => $status,
 	  "password" => $password
 	);
+	
 	$result = $app->getDB()->player->insert($newplayer);
         $players=$result;
     }
-    $app->returnResult($players);
+    $app->returnResult($newplayer);
    $db=null;
 });
 
