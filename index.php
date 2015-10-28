@@ -337,7 +337,7 @@ $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {
 	$result = $app->getDB()->player->insert($newplayer);
         $players=$result;
     }
-    $app->returnResult($players);
+    $app->returnResult($newplayer);
    $db=null;
 });
 
@@ -367,7 +367,7 @@ $app->post('/games/:ip/initiate' ,function ($ip) use ($app) {
 	$result2 = $app->getDB()->gameuser->insert($newgameuser);
 	$app->returnResult($result);
 	});
-//curl -X POST http://127.0.0.1/anton/cardapi/initiategame/myip2
+//curl -X GET http://127.0.0.1/anton/cardapi/games/myip/starting
 $app->get('/games/:ip/starting',function ($ip) use ($app) { 
     $findgames=$app->getDB()->gameuser->where("status", $app->gameState(CardApi::INITIATED));
     if (count($findgames)>0){
@@ -383,6 +383,7 @@ $app->get('/games/:ip/starting',function ($ip) use ($app) {
     } else $app->returnError("no games defined yet");return;
 });
 //returns list of ip for all players who have applied for a game
+//curl -X GET http://127.0.0.1/anton/cardapi/initiategame/myip2
 $app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
