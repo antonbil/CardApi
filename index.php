@@ -365,7 +365,8 @@ $app->post('/games/:ip/initiate' ,function ($ip) use ($app) {
 		"cards" => json_encode(array())
 	);
 	$result2 = $app->getDB()->gameuser->insert($newgameuser);
-	$app->returnResult($result);
+	$app->returnResult(array(
+            "result" => $result));
 	});
 //curl -X GET http://127.0.0.1/anton/cardapi/games/myip/starting
 $app->get('/games/:ip/starting',function ($ip) use ($app) { 
@@ -402,7 +403,8 @@ $app->get('/players/:ip/:ipplayer/name',function ($ip, $ipplayer) use ($app) {
     foreach ($findplayer as $player) {
     	$result=$player["name"];
 	}
-	$app->returnResult($result); 
+	$app->returnResult(array(
+            "name" => $result)); 
 	 
 });
 
@@ -428,7 +430,8 @@ $app->post('/games/:gamenr/apply/:ip',function ($ip, $gamenr) use ($app) {
 		"cards" => json_encode(array())
 	);
 	$result2 = $app->getDB()->gameuser->insert($newgameuser);
-	$app->returnResult(1); 
+	$app->returnResult(array(
+            "result" => 1)); 
 });
 
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
@@ -471,7 +474,8 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 	  //set token = 1 in game, and status=running
 	  $result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>json_encode($deckcards),"restcards"=>$cards,"tokenplayer"=>1,
 		"status"=>$app->gameState(CardApi::RUNNING)));
-	  $app->returnResult(1);
+	  $app->returnResult(array(
+            "result" => 1));
 });
 //returns the ip which has the token for the game, error if game not started yet etc.
 //get player-id who has token for game
@@ -481,7 +485,8 @@ $app->get('/games/:ip/:gamenr/token',function ($ip, $gamenr) use ($app) {
     foreach ($findgame as $game) {
     	$result=$game["tokenplayer"];
 	}
-	$app->returnResult($result); 
+	$app->returnResult(array(
+            "token" => $result)); 
 });
 //returns the cards a player has (array of cardnumbers) game is still playing, 0 otherwise 
 $app->post('/games/:ip/:gamenr/getcards',function ($ip, $gamenr) use ($app) {
@@ -521,7 +526,8 @@ $app->post('/games/:ip/:gamenr/play/move/:cardnumberin/:carnumberout',function (
 		$app->nextMove($gamenr,$gameplayer["token"]);
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(intval ($cardnumberin))),json_encode(array(intval ($cardnumberout))));
 	$result = 1;
-    $app->returnResult($result);
+    $app->returnResult(array(
+            "result" => $result));
 	 
 });
 //-getmoves(ip,ipplayer,gamenr) get
@@ -563,7 +569,8 @@ $app->post('/games/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 		$app->nextMove($gamenr,$gameplayer["token"]);
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),$cards,$cardsontable);
 	$result=$cards;
-    $app->returnResult($result);
+    $app->returnResult(array(
+            "result" => $result));
 	 
 });
 //-offerpass(ip,gamenr) post
@@ -580,7 +587,8 @@ $app->post('/games/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
 	$app->nextMove($gamenr,$gameplayer["token"]);
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array()),json_encode(array()));
 	$result=1;
-    $app->returnResult($result);
+    $app->returnResult(array(
+            "result" => $result));
 	 
 });
 //-claimwin(ip,gamenr) post
@@ -603,7 +611,8 @@ $app->get('/games/:ip/:gamenr/state',function ($ip, $gamenr) use ($app) {
      	$result=$game["status"];
 	 }
 	} else {$app->returnError("game $gamenr not defined");return;}
-    $app->returnResult($result);
+    $app->returnResult(array(
+            "status" => $result));
 });
 //-getresultgame(ip,gamenr, ipplayer) get
 //returns list of cards for ipplayer if game is ended.
@@ -637,7 +646,8 @@ $app->get('/games/:ip/:gamenr/winner',function ($ip, $gamenr) use ($app) {
 $app->get('/cards/:cards/value',function ($cards) use ($app) {
 	$parts = explode(",", $cards);
 	$val=$app->getValue($parts);
-	$app->returnResult($val);
+	$app->returnResult(array(
+            "value" => $val));
 });
 //commercials
 //returns title, first line, description and png.
