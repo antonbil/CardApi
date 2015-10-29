@@ -628,7 +628,7 @@ $app->get('/games/:ip/:gamenr/cards/:ipplayer',function ($ip, $gamenr, $ipplayer
 	//echo "player cards can be shown!";
 	$cards=$gameplayer["finduser"]["cards"];
 	$app->returnResult(array(
-            "cards" => $cards,"player" => $ipplayer));
+            "cards" => $gameplayer["finduser"],"player" => $ipplayer));
 	 
 });
 //-getwinnergame(ip,gamenr) get
