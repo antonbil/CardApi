@@ -624,7 +624,7 @@ $app->get('/games/:ip/:gamenr/state',function ($ip, $gamenr) use ($app) {
 //returns list of cards for ipplayer if game is ended.
 $app->get('/games/:ip/:gamenr/cards/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) {
 	$gameplayer=$app->checkgameplayertoken($ipplayer, $gamenr,$app->gameState(CardApi::ENDED),false);
-	if (!$gameplayer)return;
+	if (!$gameplayer{$app->returnError("game $gamenr not ended or $ipplayer does not have token");return;};
 	
 	$cards=$gameplayer["finduser"]["cards"];
 	$app->returnResult($cards);
@@ -672,7 +672,8 @@ $app->get('/commercials/:title',function ($title) use ($app) {
       }
 
     } else {$app->returnError("no commercials with title $title defined");return;} 
-    $app->returnResult($result);
+    $app->returnResult(array(
+            "commercial" => $result));
 });
 //commercials
 $app->get('/commercials',function () use ($app) {
@@ -687,7 +688,8 @@ $app->get('/commercials',function () use ($app) {
       }
 
     } else {$app->returnError("no commercials defined");return;} 
-    $app->returnResult($result);
+    $app->returnResult(array(
+            "commercials" => $result));
 });
 
 //delete game
@@ -700,7 +702,8 @@ $app->delete('/players/:ip', function ($ip) use ($app)  {
 	$app->getDB()->gamemove->where("player",$ip)->delete();
 	$app->getDB()->gameuser->where("player",$ip)->delete();
 	$result=$app->getDB()->player->where("ip",$ip)->delete();
-	$app->returnResult($result);    
+	$app->returnResult(array(
+            "result" => $result));    
 });
 //curl -X POST  --data "password=CardApi" http://127.0.0.1/anton/cardapi/db/create
 $app->post('/db/create', function () use ($app)  {
