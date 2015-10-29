@@ -670,7 +670,7 @@ $app->get('/commercials',function () use ($app) {
         );
       }
 
-    } else {$app->returnError("no commercials with title $title defined");return;} 
+    } else {$app->returnError("no commercials defined");return;} 
     $app->returnResult($result);
 });
 
