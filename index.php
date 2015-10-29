@@ -624,7 +624,7 @@ $app->get('/games/:ip/:gamenr/state',function ($ip, $gamenr) use ($app) {
 //returns list of cards for ipplayer if game is ended.
 $app->get('/games/:ip/:gamenr/cards/:ipplayer',function ($ip, $gamenr, $ipplayer) use ($app) {
 	$gameplayer=$app->checkgameplayertoken($ipplayer, $gamenr,$app->gameState(CardApi::ENDED),false);
-	if (!$gameplayer{$app->returnError("game $gamenr not ended or $ipplayer does not have token");return;};
+	if (!$gameplayer){$app->returnError("game $gamenr not ended or $ipplayer does not have token");return;};
 	
 	$cards=$gameplayer["finduser"]["cards"];
 	$app->returnResult($cards);
