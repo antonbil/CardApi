@@ -337,7 +337,8 @@ $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {
 	$result = $app->getDB()->player->insert($newplayer);
         $players=$newplayer;
     }
-    $app->returnResult($players);
+    $app->returnResult(array(
+            "player" => $players));
    $db=null;
 });
 //curl -X POST   --data "password=p3" http://192.168.2.8/CardApi/games/n132/initiate
@@ -380,7 +381,8 @@ $app->get('/games/:ip/starting',function ($ip) use ($app) {
         );
       }
 
-      $app->returnResult($games);
+      $app->returnResult(array(
+            "games" => $games));
     } else $app->returnError("no games defined yet");return;
 });
 //returns list of ip for all players who have applied for a game
@@ -392,7 +394,8 @@ $app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
     foreach ($findplayer as $player) {
     	$players[]=$player["player"];
 	}
-	$app->returnResult($players); 
+	$app->returnResult(array(
+            "players" => $players)); 
 });
 
 
@@ -498,7 +501,8 @@ $app->post('/games/:ip/:gamenr/getcards',function ($ip, $gamenr) use ($app) {
     foreach ($gameuser as $user) {
     	$cards=$user["cards"];
 	}
-	$app->returnResult($cards);
+	$app->returnResult(array(
+            "cards" => $cards));
 			 
 });
 /*//returns cardnumber which player gets if player has token, 0 otherwise
@@ -539,7 +543,8 @@ $app->get('/games/:ip/:gamenr/moves/:ipplayer',function ($ip, $gamenr, $ipplayer
     foreach ($findmoves as $move) {
     	$moves[]=array("cardsin"=>$move["cardsin"],"cardsout"=>$move["cardsout"]);
 	}
-	$app->returnResult($moves); 
+	$app->returnResult(array(
+            "moves" => $moves)); 
 });
 //-getdeckontable(ip,gamenr) get
 //returns list of cardnumbers lying open to see
@@ -549,7 +554,8 @@ $app->get('/games/:ip/:gamenr/deck',function ($ip, $gamenr) use ($app) {
     foreach ($findgame as $game) {
     	$result=$game["deckontable"];
 	}
-	$app->returnResult($result); 
+	$app->returnResult(array(
+            "cards" => $result)); 
 });
 //-swapcards(ip,gamenr) post
 //returns list of cards lying on table if player has token, otherwise error
@@ -570,7 +576,7 @@ $app->post('/games/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),$cards,$cardsontable);
 	$result=$cards;
     $app->returnResult(array(
-            "result" => $result));
+            "cards" => $result));
 	 
 });
 //-offerpass(ip,gamenr) post
@@ -709,7 +715,8 @@ $app->post('/db/create', function () use ($app)  {
 	$app->createTable($pdo,"commercial", "title STRING PRIMARY KEY  NOT NULL , firstline STRING, description STRING, picture BLOB");
 	   // Close file db connection
     $pdo = null;
-	$app->returnResult("1");
+	$app->returnResult(array(
+            "result" => "1"));
 });
 //curl -X POST  --data "password=CardAPi&passwordplayer=CardAPiNew" http://127.0.0.1/anton/cardapi//players/userid/password
 $app->post('/players/:ip/password', function ($ip) use ($app)  {
@@ -718,7 +725,8 @@ $app->post('/players/:ip/password', function ($ip) use ($app)  {
 	$passworduser=$app->request()->post('passwordplayer');
 	//$user=$app->getDB()->player->where("ip",$ip);
 	$result=$app->getDB()->player->insert_update(array("ip"=>$ip), array(), array("password"=>$passworduser));
-	$app->returnResult($result);    
+	$app->returnResult(array(
+            "result" => $result));    
 });
 $app->post('/commercials/add/:title', function ($title) use ($app)  {
 	if (!$app->identifyAdmin()) return;
@@ -749,7 +757,8 @@ $app->post('/commercials/add/:title', function ($title) use ($app)  {
 	$result = $app->getDB()->commercial->insert($newcommercial);
         $commercials=$newcommercial;
     }
-    $app->returnResult($commercials);
+    $app->returnResult(array(
+            "commercial" => $commercials));
    $db=null;
 });
 // run the Slim app
