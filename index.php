@@ -256,7 +256,10 @@ class CardApi extends \Slim\Slim
 		$result="0";
 	    if ($findgame){
 	     	$token=$findgame["tokenplayer"];
+			if($checkToken)
 			$finduser=$this->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip, "ordernr" => $token))->fetch();
+			else
+			$finduser=$this->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip))->fetch();
 			if($checkToken)
 				if (!($token==$finduser["ordernr"])){$this->returnError("player $ip does not have token");return false;}
 		} else {$this->returnError("$gamenr not defined or not $status");return false;}
