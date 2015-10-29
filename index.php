@@ -741,7 +741,7 @@ $app->post('/commercials/add/:title', function ($title) use ($app)  {
     }
     $app->returnResult($commercials);
    $db=null;
-}
+});
 // run the Slim app
 $app->run();
 
