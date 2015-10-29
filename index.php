@@ -630,8 +630,7 @@ $app->get('/games/:ip/:gamenr/cards/:ipplayer',function ($ip, $gamenr, $ipplayer
 	if (!$gameplayer){$app->returnError("game $gamenr not ended or $ipplayer does not have token");return;};
 	//echo "player cards can be shown!";
 	$cards=$gameplayer["finduser"]["cards"];
-	$app->returnResult(array(
-            "cards" => $gameplayer["finduser"],"player" => $ipplayer));
+	$app->returnResult($gameplayer["finduser"]);
 	 
 });
 //-getwinnergame(ip,gamenr) get
