@@ -710,7 +710,38 @@ $app->post('/players/:ip/password', function ($ip) use ($app)  {
 	$result=$app->getDB()->player->insert_update(array("ip"=>$ip), array(), array("password"=>$passworduser));
 	$app->returnResult($result);    
 });
-
+$app->post('/commercials/add/:title', function ($title) use ($app)  {
+	if (!$app->identifyAdmin()) return;
+//$app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {   
+    $findcommercial=$app->getDB()->commercial->where("title", $title);
+    $firstline=$app->request()->post('firstline');
+    $description=$app->request()->post('description');
+    $picture=$app->request()->post('picture');
+    if (count($findcommercial)>0){
+     $commercials = array();
+     foreach ($findcommercial as $commercial) {
+        $commercials[]  = array(
+            "title" => $commercial["title"],
+            "firstline" => $commercial["firstline"],
+            "description" => $commercial["description"],
+            "picture" => $commercial["picture"]
+        );
+      }
+     } else {
+	$status='ok';
+        $newcommercial=array(
+            "title" => $title,
+            "firstline" => $commercial["firstline"],
+            "description" => $commercial["description"],
+            "picture" => $commercial["picture"],
+	);
+	
+	$result = $app->getDB()->commercial->insert($newcommercial);
+        $commercials=$newcommercial;
+    }
+    $app->returnResult($commercials);
+   $db=null;
+}
 // run the Slim app
 $app->run();
 
