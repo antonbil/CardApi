@@ -731,9 +731,9 @@ $app->post('/commercials/add/:title', function ($title) use ($app)  {
 	$status='ok';
         $newcommercial=array(
             "title" => $title,
-            "firstline" => $commercial["firstline"],
-            "description" => $commercial["description"],
-            "picture" => $commercial["picture"],
+            "firstline" => $firstline,
+            "description" => $description,
+            "picture" => $picture,
 	);
 	
 	$result = $app->getDB()->commercial->insert($newcommercial);
