@@ -335,9 +335,9 @@ $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {
 	);
 	
 	$result = $app->getDB()->player->insert($newplayer);
-        $players=$players;
+        $players=$newplayer;
     }
-    $app->returnResult($newplayer);
+    $app->returnResult($result);
    $db=null;
 });
 //curl -X POST   --data "password=p3" http://192.168.2.8/CardApi/games/n132/initiate
