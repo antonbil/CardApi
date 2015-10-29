@@ -266,7 +266,7 @@ class CardApi extends \Slim\Slim
 	 * check if player has token for game that is running
 	 */
 	function checkgameplayertokenRunning($ip, $gamenr){
-		return checkgameplayertoken($ip, $gamenr,$this->gameState(CardApi::RUNNING),true);
+		return $this->checkgameplayertoken($ip, $gamenr,$this->gameState(CardApi::RUNNING),true);
 	}
 	/*
 	 * check if password belongs to player with ip
