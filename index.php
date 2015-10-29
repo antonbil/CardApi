@@ -340,7 +340,7 @@ $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {
     $app->returnResult($newplayer);
    $db=null;
 });
-
+//curl -X POST   --data "password=p3" http://192.168.2.8/CardApi/games/n132/initiate
 $app->post('/games/:ip/initiate' ,function ($ip) use ($app) {
 	if (!$app->identifyPlayer($ip)) return;
 	$nr=$app->getDB()->game->max("gamenumber");
@@ -433,6 +433,7 @@ $app->post('/games/:gamenr/apply/:ip',function ($ip, $gamenr) use ($app) {
 
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
 //player starts game
+//curl -X POST  --data "password=p3" http://192.168.2.8/CardApi/games/n132/14/start
 $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 
 	if (!$app->identifyPlayer($ip)) return;

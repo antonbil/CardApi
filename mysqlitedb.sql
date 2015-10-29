@@ -1,3 +1,8 @@
+drop table game;
+drop table commercial;
+drop table player;
+drop table gameuser;
+drop table gamemove;
 CREATE TABLE commercial (title STRING PRIMARY KEY  NOT NULL , firstline STRING, description STRING, picture BLOB);
 CREATE TABLE game (gamenumber STRING PRIMARY KEY,status STRING,starter STRING,tokenplayer STRING,deckontable STRING,restcards STRING,winner STRING);
 CREATE TABLE gamemove (game STRING,player STRING,time STRING,cardsin STRING,cardsout STRING,PRIMARY KEY (game, player,time));
