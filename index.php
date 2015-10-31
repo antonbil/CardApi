@@ -350,7 +350,10 @@ $app->post('/games/:ip/initiate' ,function ($ip) use ($app) {
 	$nr=$app->getDB()->game->max("gamenumber");
 	$status=$app->gameState(CardApi::INITIATED);//'initiated';
 	$cards=array();
-	for ($i=1;$i<53;$i++)$cards[]=$i;
+	for ($j=0;$j<4;$j++){
+	  $cards[]=$j*13+1;//cards 2-6 are not dealt.
+	  for ($i=6;$i<13;$i++)$cards[]=$i+$j*13+1;
+	}
 	$newgame=array(
 		"gamenumber" => $nr+1,
 		"starter" => $ip,
