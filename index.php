@@ -590,6 +590,7 @@ $app->post('/games/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 //move player: pass
 $app->post('/games/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
 
+try {
 	if (!$app->identifyPlayer($ip)) return;
 	$result="0";
 	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
@@ -610,6 +611,9 @@ $app->post('/games/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
     $app->returnResult(array(
             "result" => $result));
 	 
+} catch (Exception $e) {
+    echo 'Caught exception: ',  $e->getMessage(), "\n";
+}
 });
 //-claimwin(ip,gamenr) post
 //returns 1 if player has won, and has token. error otherwise
