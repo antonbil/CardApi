@@ -596,8 +596,8 @@ try {
 	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
 	if (!$gameplayer)return;
 	//get number of players
-	$players=$this->getDB()->gameuser->where(array("game" => $gamenr));
-var_dump($players);
+	$players=$app->getDB()->gameuser->where(array("game" => $gamenr));
+//var_dump($players);
 	$numberOfPlayers=count($players);
 	//get number of moves
 	$moves=$app->getDB()->gamemove->where(array("game"=>$gamenr));
