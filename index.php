@@ -590,20 +590,18 @@ $app->post('/games/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 //move player: pass
 $app->post('/games/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
 
-try {
 	if (!$app->identifyPlayer($ip)) return;
 	$result="0";
 	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
 	if (!$gameplayer)return;
 	//get number of players
 	$players=$app->getDB()->gameuser->where(array("game" => $gamenr));
-//var_dump($players);
 	$numberOfPlayers=count($players);
 	//get number of moves
 	$moves=$app->getDB()->gamemove->where(array("game"=>$gamenr));
 	$numberOfMoves=count($moves);
 	//if number of moves < number of players: illegal move
-	if ($numberOfMoves<=$numberOfPlayers){$app->returnError("number of moves ($numberOfMoves) must be greater than number of players ($numberOfPlayers)");return;}
+	if ($numberOfMoves<$numberOfPlayers){$app->returnError("number of moves ($numberOfMoves) must not be smaller than number of players ($numberOfPlayers)");return;}
 	$app->getDB()->gameuser->insert_update(array("player"=>$gameplayer["finduser"]["player"],"game"=>$gameplayer["finduser"]["game"]), array(), array("status"=>$app->playerState(CardApi::PASS)));
 	//cards not changed, so always continue with next move
 	$app->nextMove($gamenr,$gameplayer["token"]);
@@ -612,9 +610,6 @@ try {
     $app->returnResult(array(
             "result" => $result));
 	 
-} catch (Exception $e) {
-    echo 'Caught exception: ',  $e->getMessage(), "\n";
-}
 });
 //-claimwin(ip,gamenr) post
 //returns 1 if player has won, and has token. error otherwise
