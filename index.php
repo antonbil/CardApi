@@ -594,6 +594,14 @@ $app->post('/games/:ip/:gamenr/play/pass',function ($ip, $gamenr) use ($app) {
 	$result="0";
 	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
 	if (!$gameplayer)return;
+	//get number of players
+	$players=$this->getDB()->gameuser->where(array("game" => $gamenr));
+	$numberOfPlayers=count($players);
+	//get number of moves
+	$moves=$app->getDB()->gamemove->where(array("game"=>$gamenr));
+	$numberOfMoves=count($moves);
+	//if number of moves < number of players: illegal move
+	if ($numberOfMoves<=$numberOfPlayers){$app->returnError("number of moves ($numberOfMoves) must be greater than number of players ($numberOfPlayers)");return;}
 	$app->getDB()->gameuser->insert_update(array("player"=>$gameplayer["finduser"]["player"],"game"=>$gameplayer["finduser"]["game"]), array(), array("status"=>$app->playerState(CardApi::PASS)));
 	//cards not changed, so always continue with next move
 	$app->nextMove($gamenr,$gameplayer["token"]);
