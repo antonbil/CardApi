@@ -430,6 +430,7 @@ $app->post('/games/:gamenr/apply/:ip',function ($ip, $gamenr) use ($app) {
     $findusers=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip))->fetch();
 	if ((count($findusers)>1)){$app->returnError("$ip already part of game $gamenr");return;}
 	$nr=$app->getDB()->gameuser->where(array("game" => $gamenr))->max("ordernr");
+	if ($nr+1>6){$app->returnError("game $gamenr maximum number of players (6) exceeded");return;}//maximum (52-4*6)/3-1 players
 	$status=$app->gameState(CardApi::PLAYING);//'initiated';
 		$newgameuser=array(
 		"game" => $gamenr,
