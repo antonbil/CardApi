@@ -429,7 +429,7 @@ $app->post('/games/:gamenr/apply/:ip',function ($ip, $gamenr) use ($app) {
 	//check if user not already applied for this game
     $findusers=$app->getDB()->gameuser->where(array("game" => $gamenr, "player" => $ip))->fetch();
 	if ((count($findusers)>1)){$app->returnError("$ip already part of game $gamenr");return;}
-	$nr=$app->getDB()->gameuser->max("ordernr");
+	$nr=$app->getDB()->gameuser->where(array("game" => $gamenr))->max("ordernr");
 	$status=$app->gameState(CardApi::PLAYING);//'initiated';
 		$newgameuser=array(
 		"game" => $gamenr,
