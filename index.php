@@ -620,6 +620,9 @@ $app->post('/games/:ip/:gamenr/claimwin',function ($ip, $gamenr) use ($app) {
 	if (!$app->identifyPlayer($ip)) return;
 	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::ENDED),true);
 	if (!$gameplayer)return;
+	$cards=$gameplayer["finduser"]["cards"];
+	$val=$app->getValue(json_decode($cards));
+	if ($val<31){$app->returnError("No 31, you only have $val points");return;}
 	//get all players
 	$app->returnResult($app->getWinner($gamenr));
 });
