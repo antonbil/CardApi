@@ -400,10 +400,10 @@ $app->get('/games/:ip/starting',function ($ip) use ($app) {
 });
 function gameplayercmp($a, $b)
 {
-    if ($a->ordernr == $b->ordernr) {
+    if ($a["ordernr"] == $b["ordernr"]) {
         return 0;
     }
-    return ($a->ordernr < $b->ordernr) ? -1 : 1;
+    return ($a["ordernr"] < $b["ordernr"]) ? -1 : 1;
 }
 //returns list of ip for all players who have applied for a game
 //curl -X GET http://127.0.0.1/anton/cardapi/initiategame/myip2
@@ -411,9 +411,8 @@ $app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
 	//sort array on ordernr
-var_dump($findplayer);
 	if (count($findplayer)>1)
-	usort($findplayer, "gameplayercmp");
+	usort($findplayer->data, "gameplayercmp");
 	$players=array();
 	foreach ($findplayer as $player) {
     	$players[]=$player["player"];//gameuser (player ,game,status,cards,ordernr INTEGER,
