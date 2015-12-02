@@ -411,8 +411,8 @@ $app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
 	//sort array on ordernr
-	if (count($findplayer)>1)
-	usort($findplayer->data, "gameplayercmp");
+	//if (count($findplayer)>1)
+	//usort($findplayer->data, "gameplayercmp");
 	$players=array();
 	foreach ($findplayer as $player) {
     	$players[]=$player["player"];//gameuser (player ,game,status,cards,ordernr INTEGER,
