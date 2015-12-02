@@ -400,10 +400,10 @@ $app->get('/games/:ip/starting',function ($ip) use ($app) {
 });
 function gameplayercmp($a, $b)
 {
-    if ($a["ordernr"] == $b["ordernr"]) {
+    if ($a->row["ordernr"] == $b->row["ordernr"]) {
         return 0;
     }
-    return ($a["ordernr"] < $b["ordernr"]) ? -1 : 1;
+    return ($a->row["ordernr"] < $b->row["ordernr"]) ? -1 : 1;
 }
 //returns list of ip for all players who have applied for a game
 //curl -X GET http://127.0.0.1/anton/cardapi/initiategame/myip2
