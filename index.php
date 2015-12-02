@@ -344,6 +344,13 @@ $app->post('/players/:ip/add/:naam',function ($ip,$naam) use ($app) {
             "player" => $players));
    $db=null;
 });
+//validate if player with ip has password
+$app->post('/players/:ip/validate',function ($ip) use ($app) {   
+	if (!$app->identifyPlayer($ip)) return;
+    $app->returnResult(array(
+            "result" => "ok"));
+   $db=null;
+});
 //curl -X POST   --data "password=p3" http://192.168.2.8/CardApi/games/n132/initiate
 $app->post('/games/:ip/initiate' ,function ($ip) use ($app) {
 	if (!$app->identifyPlayer($ip)) return;
@@ -391,13 +398,23 @@ $app->get('/games/:ip/starting',function ($ip) use ($app) {
             "games" => $games));
     } else $app->returnError("no games defined yet");return;
 });
+function gameplayercmp($a, $b)
+{
+    if ($a["ordernr"] == $b["ordernr"]) {
+        return 0;
+    }
+    return ($a["ordernr"] < $b["ordernr"]) ? -1 : 1;
+}
 //returns list of ip for all players who have applied for a game
 //curl -X GET http://127.0.0.1/anton/cardapi/initiategame/myip2
 $app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
+	//sort array on ordernr
+	if (count($findplayer)>1)
+	usort($findplayer, "gameplayercmp");
 	$players=array();
-    foreach ($findplayer as $player) {
+	foreach ($findplayer as $player) {
     	$players[]=$player["player"];//gameuser (player ,game,status,cards,ordernr INTEGER,
 
 	}
@@ -410,7 +427,7 @@ $app->get('/games/:ip/:gamenr/playersadv',function ($ip, $gamenr) use ($app) {
 	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
 	$players=array();
-    foreach ($findplayer as $player) {
+	foreach ($findplayer as $player) {
     	$players[]=array(//gameuser (player ,game,status,cards,ordernr INTEGER,
             "ordernr" => $player["ordernr"],
             "player" => $player["player"]
