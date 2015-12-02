@@ -398,7 +398,24 @@ $app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
 	$players=array();
     foreach ($findplayer as $player) {
-    	$players[]=$player["player"];
+    	$players[]=$player["player"];//gameuser (player ,game,status,cards,ordernr INTEGER,
+
+	}
+	$app->returnResult(array(
+            "players" => $players)); 
+});
+
+//returns all players with ordernr for one game
+$app->get('/games/:ip/:gamenr/playersadv',function ($ip, $gamenr) use ($app) {
+	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
+	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
+	$players=array();
+    foreach ($findplayer as $player) {
+    	$players[]=array(//gameuser (player ,game,status,cards,ordernr INTEGER,
+            "ordernr" => $player["ordernr"],
+            "player" => $player["player"]
+	  );
+
 	}
 	$app->returnResult(array(
             "players" => $players)); 
