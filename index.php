@@ -398,21 +398,13 @@ $app->get('/games/:ip/starting',function ($ip) use ($app) {
             "games" => $games));
     } else $app->returnError("no games defined yet");return;
 });
-function gameplayercmp($a, $b)
-{
-    if ($a->row["ordernr"] == $b->row["ordernr"]) {
-        return 0;
-    }
-    return ($a->row["ordernr"] < $b->row["ordernr"]) ? -1 : 1;
-}
 //returns list of ip for all players who have applied for a game
 //curl -X GET http://127.0.0.1/anton/cardapi/initiategame/myip2
 $app->get('/games/:ip/:gamenr/players',function ($ip, $gamenr) use ($app) {
 	$findplayer=$app->getDB()->gameuser->where("game", $gamenr);
 	if (count($findplayer)==0){$app->returnError("no player for game $gamenr");return;}
-	//sort array on ordernr
-	//if (count($findplayer)>1)
-	//usort($findplayer->data, "gameplayercmp");
+	//TODO: if sqlite, findplayer is in order of addition
+	//if mysql, they are ordered by name
 	$players=array();
 	foreach ($findplayer as $player) {
     	$players[]=$player["player"];//gameuser (player ,game,status,cards,ordernr INTEGER,
