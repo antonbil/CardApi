@@ -387,13 +387,30 @@ $app->post('/games/:ip/initiate' ,function ($ip) use ($app) {
 	});
 //curl -X GET http://127.0.0.1/anton/cardapi/games/myip/starting
 $app->get('/games/:ip/starting',function ($ip) use ($app) { 
-    $findgames=$app->getDB()->gameuser->where("status", $app->gameState(CardApi::INITIATED));
+    $findgames=$app->getDB()->game->where("status", $app->gameState(CardApi::INITIATED));
     if (count($findgames)>0){
      $games = array();
      foreach ($findgames as $game) {
         $games[]  = array(
-            "id" => $game["game"],
-            "player" => $game["player"]
+            "id" => $game["gamenumber"],
+            "player" => $game["starter"]
+        );
+      }
+
+      $app->returnResult(array(
+            "games" => $games));
+    } else $app->returnError("no games defined yet");return;
+});
+$app->get('/games/:ip/all',function ($ip) use ($app) { 
+//game (gamenumber ,status,starter
+    $findgames=$app->getDB()->game();
+    if (count($findgames)>0){
+     $games = array();
+     foreach ($findgames as $game) {
+        $games[]  = array(
+            "starter" => $game["starter"],
+            "gamenumber" => $game["gamenumber"]
+            "status" => $game["status"]
         );
       }
 
