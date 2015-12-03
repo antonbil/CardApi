@@ -686,14 +686,14 @@ $app->post('/games/:ip/:gamenr/claimwin',function ($ip, $gamenr) use ($app) {
 $app->get('/games/:ip/:gamenr/finalresults',function ($ip, $gamenr) use ($app) {
 	$findgame=$app->getDB()->game->
 	  where(array("gamenumber" => $gamenr,"status"=>$app->gameState(CardApi::ENDED)));
-	if (count($findgame)>0){$app->returnError("game $gamenr not ended or unknown ");return;}
-	$findusers=$this->getDB()->gameuser->where("game", $gamenr);
+	if (count($findgame)==0){$app->returnError("game $gamenr not ended or unknown ");return;}
+	$findusers=$app->getDB()->gameuser->where("game", $gamenr);
 	$userwin=null;
 	$max=0;
 	$players=array();
 	foreach ($findusers as $user) {
 	    $cards=$user["cards"];
-	    $val=$this->getValue(json_decode($cards));
+	    $val=$app->getValue(json_decode($cards));
 	    if ($val>$max){
 		    $max=$val;
 		    $userwin=$user;
