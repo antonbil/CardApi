@@ -681,6 +681,28 @@ $app->post('/games/:ip/:gamenr/claimwin',function ($ip, $gamenr) use ($app) {
 	//get all players
 	$app->returnResult($app->getWinner($gamenr));//checkForWinning($gamenr,$cards)
 });
+//get finalresults
+//returns winner and results for each player if game is ended
+$app->get('/games/:ip/:gamenr/finalresults',function ($ip, $gamenr) use ($app) {
+	$findgame=$app->getDB()->game->
+	  where(array("gamenumber" => $gamenr,"status"=>gameState(CardApi::ENDED)));
+	if (count($findgame)>0){$app->returnError("game $gamenr not ended or unknown ");return;}
+	$findusers=$this->getDB()->gameuser->where("game", $gamenr);
+	$userwin=null;
+	$max=0;
+	$players=array();
+	foreach ($findusers as $user) {
+	    $cards=$user["cards"];
+	    $val=$this->getValue(json_decode($cards));
+	    if ($val>$max){
+		    $max=$val;
+		    $userwin=$user;
+	    }
+	    $players[]=array("player"=>$user["player"],"cards"=>$cards,"handvalue"=>$val);
+	}
+	$app->returnResult(array("winner"=>$userwin,"results"=>$players));
+	 
+});
 //-getstategame(ip,gamenr) get
 //returns one of: initiated,started,ended
 $app->get('/games/:ip/:gamenr/state',function ($ip, $gamenr) use ($app) {
