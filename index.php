@@ -524,7 +524,7 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 		  	$cards=$app->removeFrom($cardnumber,$cards);
 		  }
 		  //save $playercards to db
-		  if($user["player"]==$ip) $startercards=json_encode($playercards)
+		  if($user["player"]==$ip) $startercards=json_encode($playercards);
 		  $app->getDB()->gameuser->insert_update(array("player"=>$user["player"],"game"=>$user["game"]), array(), array("cards"=>json_encode($playercards)));
 	   }
 	  //give the table cards, and save it in game
