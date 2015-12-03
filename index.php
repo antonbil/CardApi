@@ -539,7 +539,7 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 	  //set token = 1 in game, and status=running
 	  $result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>json_encode($deckcards),"restcards"=>$cards,"tokenplayer"=>1,
 		"status"=>$app->gameState(CardApi::RUNNING)));
-	  $app->checkForWinning($gamenr,$startercards)
+	  $app->checkForWinning($gamenr,$startercards);
 	  $app->nextMove($gamenr,0);//check if there is a winner already
 	  $app->returnResult(array(
             "result" => 1));
