@@ -192,7 +192,7 @@ class CardApi extends \Slim\Slim
 	if(count($cards)>0){
 		$equal=true;
 		for ($i=1;$i<count($cardvalue);$i++)
-			if (!($cardvalue[0][1]==$cardvalue[$i][1])) $equal=false;
+			if (!($cardvalue[0][2]==$cardvalue[$i][2])) $equal=false;
 		if ($equal) $val=30.5;
 	}
 	return $val;
@@ -203,10 +203,13 @@ class CardApi extends \Slim\Slim
     */
    function getCard($card) {
    	$fl=floor(($card-1) / 13);
-	$rm=(($card-1) % 13)+1;
+	//$rv = cardnumber inside harten/klaver/etc
+	$rv=(($card-1) % 13)+1;
+	//$rm = value of card when summed up
+	$rm=$rv;
 	if ($rm>10) $rm=10;
 	if ($rm==1) $rm=11;
-	return array($fl,$rm);
+	return array($fl,$rm,$rv,$card);
    }
     
     /*
@@ -450,6 +453,15 @@ $app->post('/games/:gamenr/apply/:ip',function ($ip, $gamenr) use ($app) {
 	//check if user exists
 	if (!$app->identifyPlayer($ip)) return;
 	//check if game already initated
+	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);//CardApi::INITIATED
+	$result="";
+    if (count($findgame)>0){
+     $error=false;
+     foreach ($findgame as $game) {
+     	if (!(CardApi::INITIATED==$game["status"])) $error=true;
+	 }
+	if ($error){$app->returnError("game $gamenr not defined");return;}
+	} else {$app->returnError("game $gamenr not defined");return;}
     $findusers=$app->getDB()->gameuser->where(array("game" => $gamenr));
 	if (!(count($findusers)>0)){$app->returnError("game $gamenr not initiated yet");return;}
 	//check if user not already applied for this game
@@ -654,7 +666,7 @@ $app->post('/games/:ip/:gamenr/claimwin',function ($ip, $gamenr) use ($app) {
 //-getstategame(ip,gamenr) get
 //returns one of: initiated,started,ended
 $app->get('/games/:ip/:gamenr/state',function ($ip, $gamenr) use ($app) {
-	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);
+	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);//CardApi::INITIATED
 	$result="";
     if (count($findgame)>0){
      foreach ($findgame as $game) {
