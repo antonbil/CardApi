@@ -685,7 +685,7 @@ $app->post('/games/:ip/:gamenr/claimwin',function ($ip, $gamenr) use ($app) {
 //returns winner and results for each player if game is ended
 $app->get('/games/:ip/:gamenr/finalresults',function ($ip, $gamenr) use ($app) {
 	$findgame=$app->getDB()->game->
-	  where(array("gamenumber" => $gamenr,"status"=>gameState(CardApi::ENDED)));
+	  where(array("gamenumber" => $gamenr,"status"=>$app->gameState(CardApi::ENDED)));
 	if (count($findgame)>0){$app->returnError("game $gamenr not ended or unknown ");return;}
 	$findusers=$this->getDB()->gameuser->where("game", $gamenr);
 	$userwin=null;
