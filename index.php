@@ -409,7 +409,7 @@ $app->get('/games/:ip/all',function ($ip) use ($app) {
      foreach ($findgames as $game) {
         $games[]  = array(
             "starter" => $game["starter"],
-            "gamenumber" => $game["gamenumber"]
+            "gamenumber" => $game["gamenumber"],
             "status" => $game["status"]
         );
       }
