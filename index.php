@@ -513,9 +513,8 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 		//for all players: give them three cards
 		$cards=$gameplayer["findgame"]["restcards"];
 		//var_dump($findusers);
-    foreach ($findusers as $user) {
-      //for ($i=0;$i<count($findusers);$i++) {
-          //$user=$findusers[$i];
+	  $startercards="";
+	  foreach ($findusers as $user) {
 		  $playercards=array();
 		  for ($j=1;$j<4;$j++){
 		  	$mycards=json_decode($cards);
@@ -525,6 +524,7 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 		  	$cards=$app->removeFrom($cardnumber,$cards);
 		  }
 		  //save $playercards to db
+		  if($user["player"]==$ip) $startercards=json_encode($playercards)
 		  $app->getDB()->gameuser->insert_update(array("player"=>$user["player"],"game"=>$user["game"]), array(), array("cards"=>json_encode($playercards)));
 	   }
 	  //give the table cards, and save it in game
@@ -539,6 +539,7 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 	  //set token = 1 in game, and status=running
 	  $result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>json_encode($deckcards),"restcards"=>$cards,"tokenplayer"=>1,
 		"status"=>$app->gameState(CardApi::RUNNING)));
+	  $app->checkForWinning($gamenr,$startercards)
 	  $app->nextMove($gamenr,0);//check if there is a winner already
 	  $app->returnResult(array(
             "result" => 1));
