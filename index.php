@@ -156,7 +156,7 @@ class CardApi extends \Slim\Slim
    	$arrcards=json_decode($cards);
    	//if player has 31, then end game
    	if ($this->getValue($arrcards)==31){
-		$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$app->gameState(CardApi::ENDED)));
+		$this->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("status"=>$this->gameState(CardApi::ENDED)));
 		$this->getWinner($gamenr);
 		$result=true;
 	}
