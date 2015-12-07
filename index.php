@@ -597,7 +597,7 @@ $app->post('/games/:ip/:gamenr/play/move/:cardnumberin/:carnumberout',function (
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(intval ($cardnumberin))),json_encode(array(intval ($cardnumberout))));
 	$result = 1;
     $app->returnResult(array(
-            "result" => $result,"cards"=>$cards,"winning"=>$winning));
+            "result" => $result,"cards"=>$cards,"winning"=>$winning,"value"=>$app->getValue($cards)));
 	 
 });
 //-getmoves(ip,ipplayer,gamenr) get
