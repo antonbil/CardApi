@@ -860,6 +860,27 @@ $app->post('/commercials/add/:title', function ($title) use ($app)  {
             "commercial" => $commercials));
    $db=null;
 });
+
+//function made for convenience and testing purposes.
+//forces then hand of the player equal to cards
+$app->post('/players/:ip/forcegame/:gamenr/cards/:cards',function ($ip, , $gamenr, $cards) use ($app) {
+	if (!$app->identifyAdmin()) return;
+	$app->getDB()->gameuser->insert_update(array("player"=>$ip,"game"=>$gamenr), array(), array("cards"=>$cards));
+	$app->returnResult(array(
+            "cards" => $cards)); 
+	 
+});
+
+//function made for convenience and testing purposes.
+//forces then hand of the player equal to cards
+$app->post('/games/:gamenr/forcedeck/:cards',function ($gamenr, $cards) use ($app) {
+	if (!$app->identifyAdmin()) return;
+	$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cards));
+	$app->returnResult(array(
+            "cards" => $cards)); 
+	 
+});
+
 // run the Slim app
 $app->run();
 
