@@ -514,6 +514,7 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 		$cards=$gameplayer["findgame"]["restcards"];
 		//var_dump($findusers);
 	  $startercards="";
+	  $status=$app->gameState(CardApi::RUNNING);
 	  foreach ($findusers as $user) {
 		  $playercards=array();
 		  for ($j=1;$j<4;$j++){
@@ -526,6 +527,8 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 		  //save $playercards to db
 		  if($user["player"]==$ip) $startercards=json_encode($playercards);
 		  $app->getDB()->gameuser->insert_update(array("player"=>$user["player"],"game"=>$user["game"]), array(), array("cards"=>json_encode($playercards)));
+		  //check for every user if it is 31
+		  if($app->checkForWinning($gamenr,json_encode($playercards))) $status=$app->gameState(CardApi::ENDED);
 	   }
 	  //give the table cards, and save it in game
 	  $deckcards=array();
@@ -538,7 +541,7 @@ $app->post('/games/:ip/:gamenr/start',function ($ip, $gamenr) use ($app) {
 	  }
 	  //set token = 1 in game, and status=running
 	  $result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>json_encode($deckcards),"restcards"=>$cards,"tokenplayer"=>1,
-		"status"=>$app->gameState(CardApi::RUNNING)));
+		"status"=>$status));
 	  $app->checkForWinning($gamenr,$startercards);
 	  $app->nextMove($gamenr,0);//check if there is a winner already
 	  $app->returnResult(array(
@@ -637,12 +640,14 @@ $app->post('/games/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 	$cards=$gameplayer["findgame"]["deckontable"];
 	$app->getDB()->gameuser->insert_update(array("player"=>$gameplayer["finduser"]["player"],"game"=>$gameplayer["finduser"]["game"]), array(), array("cards"=>$cards,"status"=>$app->playerState(CardApi::PASS)));
 	$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
+	$winning="continue";
 	if (!$app->checkForWinning($gamenr,$cards))
 		$app->nextMove($gamenr,$gameplayer["token"]);
+	else $winning="winning";
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),$cards,$cardsontable);
 	$result=$cards;
     $app->returnResult(array(
-            "cards" => $result,"cards"=>$cards));
+            "cards" => $result,"cards"=>$cards,"winning"=>$winning,"value"=>$app->getValue(json_decode($cards))));
 	 
 });
 //-offerpass(ip,gamenr) post
