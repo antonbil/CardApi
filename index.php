@@ -595,7 +595,7 @@ $app->post('/games/:ip/:gamenr/play/move/:cardnumberin/:carnumberout',function (
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(intval ($cardnumberin))),json_encode(array(intval ($cardnumberout))));
 	$result = 1;
     $app->returnResult(array(
-            "result" => $result));
+            "result" => $result,"cards"=>$cards));
 	 
 });
 //-getmoves(ip,ipplayer,gamenr) get
@@ -640,7 +640,7 @@ $app->post('/games/:ip/:gamenr/play/swap',function ($ip, $gamenr) use ($app) {
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),$cards,$cardsontable);
 	$result=$cards;
     $app->returnResult(array(
-            "cards" => $result));
+            "cards" => $result,"cards"=>$cards));
 	 
 });
 //-offerpass(ip,gamenr) post
