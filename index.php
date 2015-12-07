@@ -590,12 +590,14 @@ $app->post('/games/:ip/:gamenr/play/move/:cardnumberin/:carnumberout',function (
 	$cardsontable=$app->addTo($cardnumberout,$cardsontable);
 	$app->getDB()->gameuser->insert_update(array("player"=>$gameplayer["finduser"]["player"],"game"=>$gameplayer["finduser"]["game"]), array(), array("cards"=>$cards));
 	$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
+	$winning="continue";
 	if (!$app->checkForWinning($gamenr,$cards))
 		$app->nextMove($gamenr,$gameplayer["token"]);
+	else $winning="winning";
 	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(intval ($cardnumberin))),json_encode(array(intval ($cardnumberout))));
 	$result = 1;
     $app->returnResult(array(
-            "result" => $result,"cards"=>$cards));
+            "result" => $result,"cards"=>$cards,"winning":$winning));
 	 
 });
 //-getmoves(ip,ipplayer,gamenr) get
