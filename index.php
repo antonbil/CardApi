@@ -562,7 +562,7 @@ $app->post('/games/:ip/:gamenr/initiatemysterycard',function ($ip, $gamenr) use 
 	$result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("mysterycard"=>$cardnumber));
 	$app->returnResult(array(
 	  "result" => 1));
-}
+});
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
 //player starts game
 //curl -X POST  --data "password=p3" http://192.168.2.8/CardApi/games/n132/14/start
