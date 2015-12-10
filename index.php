@@ -518,7 +518,7 @@ $app->post('/games/:ip/:gamenr/play/mysterycard/:cardnumber',function ($ip, $gam
 	
 	$cards=$gameplayer["finduser"]["cards"];
 	$cards=$app->removeFrom($cardnumber,$cards);
-	if (!$cards){$app->returnError("$cardnumberout not part of cards of player");return;}
+	if (!$cards){$app->returnError("$cardnumber not part of cards of player");return;}
 	//get mystery card
 	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);//CardApi::INITIATED
 	$mysterycard=0;
