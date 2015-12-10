@@ -538,7 +538,7 @@ $app->post('/games/:ip/:gamenr/play/mysterycard/:cardnumber',function ($ip, $gam
 	if (!$app->checkForWinning($gamenr,$cards))
 		$app->nextMove($gamenr,$gameplayer["token"]);
 	else $winning="winning";
-	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(),json_encode(array()));
+	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(),json_encode(array())));
 	$result = 1;
     $app->returnResult(array(
             "result" => $result,"mysterycard"=>$mysterycard,"cards"=>$cards,"winning"=>$winning,"value"=>$app->getValue(json_decode($cards))));
