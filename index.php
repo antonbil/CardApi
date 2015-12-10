@@ -878,10 +878,10 @@ $app->post('/db/create', function () use ($app)  {
 	if (!$app->identifyAdmin()) return;
 		$pdo = new PDO('sqlite:mysqlitedb.db');
 	//$file_db = new PDO('sqlite:mysqlitedb.db');
-	$app->createTable($pdo,"player", "ip STRING PRIMARY KEY,id STRING,name STRING,status STRING, password STRING");
+	$app->createTable($pdo,"player", "ip STRING PRIMARY KEY,id STRING,name STRING,status STRING, password STRING, datafield STRING");
 	$app->createTable($pdo,"gameuser", "player STRING,game STRING,status STRING,cards STRING,ordernr INTEGER,PRIMARY KEY (player, game)");
 	$app->createTable($pdo,"gamemove", "game STRING,player STRING,time STRING,cardsin STRING,cardsout STRING,PRIMARY KEY (game, player,time)");
-	$app->createTable($pdo,"game", "gamenumber STRING PRIMARY KEY,status STRING,starter STRING,tokenplayer STRING,deckontable STRING,restcards STRING,winner STRING");
+	$app->createTable($pdo,"game", "gamenumber STRING PRIMARY KEY,status STRING,starter STRING,tokenplayer STRING,deckontable STRING,restcards STRING,winner STRING, mysterycard INTEGER");
 	$app->createTable($pdo,"commercial", "title STRING PRIMARY KEY  NOT NULL , firstline STRING, description STRING, picture BLOB");
 	   // Close file db connection
     $pdo = null;
