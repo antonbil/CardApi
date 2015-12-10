@@ -533,7 +533,6 @@ $app->post('/games/:ip/:gamenr/play/mysterycard/:cardnumber',function ($ip, $gam
 	//and now add old mysterycard to player card, and send it back
 	$cards=$app->addTo($mysterycard,$cards);
 	$app->getDB()->gameuser->insert_update(array("player"=>$gameplayer["finduser"]["player"],"game"=>$gameplayer["finduser"]["game"]), array(), array("cards"=>$cards));
-	$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
 	$winning="continue";
 	if (!$app->checkForWinning($gamenr,$cards))
 		$app->nextMove($gamenr,$gameplayer["token"]);
