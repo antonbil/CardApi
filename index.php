@@ -498,7 +498,71 @@ $app->post('/games/:gamenr/apply/:ip',function ($ip, $gamenr) use ($app) {
 	$app->returnResult(array(
             "result" => 1)); 
 });
+/*
+	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);//CardApi::INITIATED
+	$mysterycard=0;
+	if (count($findgame)>0){
+	 foreach ($findgame as $game) {
+	    $mysterycard=$game["mysterycard"];
+	 }
+	} else {$app->returnError("game $gamenr not defined");return;}
+	if ($mysterycard==0){$app->returnError("no mysterycard found in game $gamenr");return;}
+	
+	$result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("mysterycard"=>$cardnumber));
+*/
+$app->post('/games/:ip/:gamenr/play/mysterycard/:cardnumber',function ($ip, $gamenr, $cardnumber) use ($app) {
 
+	if (!$app->identifyPlayer($ip)) return;
+	$gameplayer=$app->checkgameplayertokenRunning($ip, $gamenr);
+	if (!$gameplayer)return;
+	
+	$cards=$gameplayer["finduser"]["cards"];
+	$cards=$app->removeFrom($cardnumber,$cards);
+	if (!$cards){$app->returnError("$cardnumberout not part of cards of player");return;}
+	//get mystery card
+	$findgame=$app->getDB()->game->where("gamenumber",$gamenr);//CardApi::INITIATED
+	$mysterycard=0;
+	if (count($findgame)>0){
+	 foreach ($findgame as $game) {
+	    $mysterycard=$game["mysterycard"];
+	 }
+	} else {$app->returnError("game $gamenr not defined");return;}
+	if ($mysterycard==0){$app->returnError("no mysterycard found in game $gamenr");return;}
+	//store new mysterycard in db
+	$result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("mysterycard"=>$cardnumber));
+	//and now add old mysterycard to player card, and send it back
+	$cards=$app->addTo($mysterycard,$cards);
+	$app->getDB()->gameuser->insert_update(array("player"=>$gameplayer["finduser"]["player"],"game"=>$gameplayer["finduser"]["game"]), array(), array("cards"=>$cards));
+	$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("deckontable"=>$cardsontable));
+	$winning="continue";
+	if (!$app->checkForWinning($gamenr,$cards))
+		$app->nextMove($gamenr,$gameplayer["token"]);
+	else $winning="winning";
+	$app->addMove($gamenr,$ip,date('Y-m-d H:i:s'),json_encode(array(),json_encode(array());
+	$result = 1;
+    $app->returnResult(array(
+            "result" => $result,"mysterycard"=>$mysterycard,"cards"=>$cards,"winning"=>$winning,"value"=>$app->getValue(json_decode($cards))));
+	 
+});
+//initiate mystery card.
+//can only be initiated by the player who has initiated and started the game
+//game needs to be running
+$app->post('/games/:ip/:gamenr/initiatemysterycard',function ($ip, $gamenr) use ($app) {
+	if (!$app->identifyPlayer($ip)) return;
+	$gameplayer=$app->checkgameplayertoken($ip, $gamenr,$app->gameState(CardApi::RUNNING),true);
+	if (!$gameplayer){$app->returnError("game $gamenr not running");return;}
+	if (!($gameplayer["token"]==1)){$app->returnError("$ip has not initiated and started game $gamenr");return;}
+	$cards=$gameplayer["findgame"]["restcards"];
+	$cardnumber=0;
+	$mycards=json_decode($cards);
+	$number=rand ( 0 , count($mycards)-1 );
+	$cardnumber=$mycards[$number];
+	$playercards[]=$cardnumber;
+	$cards=$app->removeFrom($cardnumber,$cards);
+	$result=$app->getDB()->game->insert_update(array("gamenumber"=>$gamenr), array(), array("mysterycard"=>$cardnumber));
+	$app->returnResult(array(
+	  "result" => 1));
+}
 //returns 1 if game is started, 0 if ip has not initiated game or no players yet
 //player starts game
 //curl -X POST  --data "password=p3" http://192.168.2.8/CardApi/games/n132/14/start
