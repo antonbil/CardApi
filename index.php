@@ -950,6 +950,13 @@ $app->post('/games/:gamenr/forcedeck/:cards',function ($gamenr, $cards) use ($ap
             "cards" => $cards)); 
 	 
 });
+//delete commercial with title
+$app->post('/commercials/delete/:title', function ($title) use ($app)  {
+	if (!$app->identifyAdmin()) return;
+	$app->getDB()->commercial->where("title", $title)->delete();
+	$app->returnResult(array(
+            "result" => "","deleted" => $title)); 
+});
 
 // run the Slim app
 $app->run();
