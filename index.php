@@ -859,7 +859,7 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	$games=array();
 	if (count($findgame)>0){
 	  foreach ($findgame as $game) {
-		$games[]=array(array("game"=>$game["gamenumber"]),array("winner"=>$game["winner"])));
+		$games[]=array(array("game"=>$game["gamenumber"]),array("winner"=>$game["winner"]));
 	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
