@@ -841,6 +841,19 @@ $app->get('/commercials/:title',function ($title) use ($app) {
     $app->returnResult(array(
             "commercial" => $result));
 });
+$app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
+	$findmoves=$app->getDB()->gamemove->select("game");
+	if (count($findmoves)==0){$app->returnError("no moves available");return;}
+	$moves=array();
+    foreach ($findmoves as $move) {
+	if($moves[$move["game"]])
+	  $moves[$move["game"]]=$moves[$move["game"]]+1;
+	else
+	  $moves[$move["game"]]=$moves[$move["game"]]+1;
+	}
+	$app->returnResult(array(
+            "result" => $moves)); 
+});
 //commercials
 $app->get('/commercials',function () use ($app) {
 	$commercials = $app->getDB()->commercial->select("title");
