@@ -858,6 +858,23 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	$app->returnResult(array(
             "result" => $result)); 
 });
+$app->get('/games/:ip/gametotals',function ($ip) use ($app) {
+	$findgame=$app->getDB()->game;//CardApi::INITIATED
+	$games=array();
+	if (count($findgame)>0){
+	  foreach ($findgame as $game) {
+	  if(!is_null ($game["winner"]))
+		$findusers=$app->getDB()->gameuser->where(array("game"=>$game["gamenumber"],"player"=>$game["winner"]));
+		foreach ($findusers as $user) {
+		    $cards=$user["cards"];
+		    $val=$app->getValue(json_decode($cards));
+		    $games[]=array($game["gamenumber"]=>$val);
+		}
+	  }
+	} else {$app->returnError("no games available");return;}
+	$app->returnResult(array(
+            "result" => $games));
+});
 $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	$findgame=$app->getDB()->game;//CardApi::INITIATED
 	$games=array();
