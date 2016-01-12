@@ -845,19 +845,30 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	$findmoves=$app->getDB()->gamemove->select("game");
 	if (count($findmoves)==0){$app->returnError("no moves available");return;}
 	$moves=array();
-    foreach ($findmoves as $move) {
-	if(isset ($moves[$move["game"]]))
-	  $moves[$move["game"]]=$moves[$move["game"]]+1;
-	else
-	  $moves[$move["game"]]=1;//one occurrence at least
+	foreach ($findmoves as $move) {
+	  if(isset ($moves[$move["game"]]))
+	    $moves[$move["game"]]=$moves[$move["game"]]+1;
+	  else
+	    $moves[$move["game"]]=1;//one occurrence at least
 	}
 	$app->returnResult(array(
             "result" => $moves)); 
 });
+$app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
+	$findgame=$app->getDB()->game->select(array("gamenumber","winner"));//CardApi::INITIATED
+	$games=array();
+	if (count($findgame)>0){
+	  foreach ($findgame as $game) {
+		$games[]=array(array("game"=>$game["gamenumber"]),array("winner"=>$game["winner"])));
+	  }
+	} else {$app->returnError("no games available");return;}
+	$app->returnResult(array(
+            "result" => $games));
+});
 //commercials
 $app->get('/commercials',function () use ($app) {
-	$commercials = $app->getDB()->commercial->select("title");
-	$result=array();
+    $commercials = $app->getDB()->commercial->select("title");
+    $result=array();
     if (count($commercials)>0){
     	$result=array();
      foreach ($commercials as $commercial) {
