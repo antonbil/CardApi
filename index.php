@@ -849,7 +849,7 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	if(isset ($moves[$move["game"]]))
 	  $moves[$move["game"]]=$moves[$move["game"]]+1;
 	else
-	  $moves[$move["game"]]=$moves[$move["game"]]+1;
+	  $moves[$move["game"]]=0;
 	}
 	$app->returnResult(array(
             "result" => $moves)); 
