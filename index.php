@@ -851,8 +851,12 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	  else
 	    $moves[$move["game"]]=1;//one occurrence at least
 	}
+	$result=array();
+	foreach ($moves as $key => $move) {
+	  $result[]=array(array("game"=>$key),array("number"=>$game["winner"]));
+	}
 	$app->returnResult(array(
-            "result" => $moves)); 
+            "result" => $result)); 
 });
 $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	$findgame=$app->getDB()->game;//CardApi::INITIATED
