@@ -855,7 +855,7 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
             "result" => $moves)); 
 });
 $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
-	$findgame=$app->getDB()->game->select(array("gamenumber","winner"));//CardApi::INITIATED
+	$findgame=$app->getDB()->game->select(/*array("gamenumber","winner")*/);//CardApi::INITIATED
 	$games=array();
 	if (count($findgame)>0){
 	  foreach ($findgame as $game) {
