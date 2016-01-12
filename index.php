@@ -852,7 +852,7 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	    $moves[$move["game"]]=1;//one occurrence at least
 	}
 	$result=array();
-	foreach ($moves as $key => $move) {
+	foreach ($moves as $key => $game) {
 	  $result[]=array(array("game"=>$key),array("number"=>$game["winner"]));
 	}
 	$app->returnResult(array(
