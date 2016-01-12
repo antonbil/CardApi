@@ -846,7 +846,7 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	if (count($findmoves)==0){$app->returnError("no moves available");return;}
 	$moves=array();
     foreach ($findmoves as $move) {
-	if($moves[$move["game"]])
+	if(isset ($moves[$move["game"]]))
 	  $moves[$move["game"]]=$moves[$move["game"]]+1;
 	else
 	  $moves[$move["game"]]=$moves[$move["game"]]+1;
