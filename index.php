@@ -886,7 +886,8 @@ $app->get('/games/:ip/numplayers',function ($ip) use ($app) {
 		foreach ($findusers as $user) {
 		    $num=$num+1;
 		}
-		$games[]=array($game["gamenumber"]=>$num);
+		if($num>1)
+		  $games[]=array($game["gamenumber"]=>$num);//no game for 1 player
 	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
