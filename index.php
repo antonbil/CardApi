@@ -903,10 +903,10 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	  }
 	  $winners=array();
 	  foreach ($games as $key=>$winner) {
-	    if(isset ($winners[$winner.winner]))
-	      $winners[$winner.winner]++;
+	    if(isset ($winners[$winner]))
+	      $winners[$winner]++;
 	    else
-	      $winners[$winner.winner]=1;
+	      $winners[$winner]=1;
 	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
