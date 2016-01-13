@@ -872,6 +872,18 @@ $app->get('/games/:ip/gametotals',function ($ip) use ($app) {
 		}
 	    }
 	  }
+	  $winners=array();
+	  foreach ($games as $game) {
+	    if(isset ($winners[$game[1]]))
+	      $winners[$game[1]]++;
+	    else
+	      $winners[$game[1]]=1;
+	  }
+	  //convert winners to array
+	  $result=array();
+	  foreach ($winners as $key=>$value) {
+	    $result[]=array($key=>$value);
+	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
             "result" => $games));
