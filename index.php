@@ -867,10 +867,24 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	  foreach ($winners as $key=>$value) {
 	    $result[]=array($key=>$value);
 	  }
-	  asort ($result);
 	$app->returnResult(array(
             "result" => $result)); 
 });
+function countFrequency($games){
+	  $winners=array();
+	  foreach ($games as $game) {
+	    if(isset ($winners[$game[1]]))
+	      $winners[$game[1]]++;
+	    else
+	      $winners[$game[1]]=1;
+	  }
+	  //convert winners to array
+	  $result=array();
+	  foreach ($winners as $key=>$value) {
+	    $result[]=array($key=>$value);
+	  }
+	  return $result;
+}
 $app->get('/games/:ip/gametotals',function ($ip) use ($app) {
 	$findgame=$app->getDB()->game;//CardApi::INITIATED
 	$games=array();
@@ -885,18 +899,7 @@ $app->get('/games/:ip/gametotals',function ($ip) use ($app) {
 		}
 	    }
 	  }
-	  $winners=array();
-	  foreach ($games as $game) {
-	    if(isset ($winners[$game[1]]))
-	      $winners[$game[1]]++;
-	    else
-	      $winners[$game[1]]=1;
-	  }
-	  //convert winners to array
-	  $result=array();
-	  foreach ($winners as $key=>$value) {
-	    $result[]=array($key=>$value);
-	  }
+	  $result=countFrequency($games);
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
             "result" => $result));
