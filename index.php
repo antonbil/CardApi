@@ -901,9 +901,16 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	  if(!is_null ($game["winner"]))
 		$games[]=array($game["gamenumber"]=>array("winner"=>$game["winner"]));
 	  }
+	  $winners=array();
+	  foreach ($games as $key=>$winner) {
+	    if(isset ($winners[$winner["winner"]]))
+	      $winners[$winner["winner"]]++;
+	    else
+	      $winners[$winner["winner"]]=1;
+	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
-            "result" => $games));
+            "result" => $winners));
 });
 //commercials
 $app->get('/commercials',function () use ($app) {
