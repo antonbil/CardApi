@@ -908,13 +908,13 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	    else
 	      $winners[$game[1]]=1;
 	  }
-	  /*$result=array();
-	  foreach ($winners as $winner) {
-	    result[]=array($winner[0]=>$winner[1]);
-	  }*/
+	  $result=array();
+	  foreach ($winners as $key=>$value) {
+	    result[]=array($key=>$value);
+	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
-            "result" => $winners));
+            "result" => $result));
 });
 //commercials
 $app->get('/commercials',function () use ($app) {
