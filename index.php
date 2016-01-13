@@ -886,7 +886,7 @@ $app->get('/games/:ip/gametotals',function ($ip) use ($app) {
 	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
-            "result" => $games));
+            "result" => $result));
 });
 $app->get('/games/:ip/numplayers',function ($ip) use ($app) {
 	$findgame=$app->getDB()->game;//CardApi::INITIATED
