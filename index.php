@@ -855,18 +855,7 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	foreach ($moves as $key => $number) {
 	  $result[]=array($key,$number);
 	}
-	  $winners=array();
-	  foreach ($result as $game) {
-	    if(isset ($winners[$game[1]]))
-	      $winners[$game[1]]++;
-	    else
-	      $winners[$game[1]]=1;
-	  }
-	  //convert winners to array
-	  $result=array();
-	  foreach ($winners as $key=>$value) {
-	    $result[]=array($key=>$value);
-	  }
+	$result=countFrequency($result);
 	$app->returnResult(array(
             "result" => $result)); 
 });
@@ -917,18 +906,7 @@ $app->get('/games/:ip/numplayers',function ($ip) use ($app) {
 		if($num>1)
 		  $games[]=array($game["gamenumber"],$num);//no game for 1 player
 	  }
-	  $winners=array();
-	  foreach ($games as $game) {
-	    if(isset ($winners[$game[1]]))
-	      $winners[$game[1]]++;
-	    else
-	      $winners[$game[1]]=1;
-	  }
-	  //convert winners to array
-	  $result=array();
-	  foreach ($winners as $key=>$value) {
-	    $result[]=array($key=>$value);
-	  }
+	  $result=countFrequency($games);
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
             "result" => $result));
@@ -941,18 +919,7 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	  if(!is_null ($game["winner"]))
 		$games[]=array($game["gamenumber"],$game["winner"]);
 	  }
-	  $winners=array();
-	  foreach ($games as $game) {
-	    if(isset ($winners[$game[1]]))
-	      $winners[$game[1]]++;
-	    else
-	      $winners[$game[1]]=1;
-	  }
-	  //convert winners to array
-	  $result=array();
-	  foreach ($winners as $key=>$value) {
-	    $result[]=array($key=>$value);
-	  }
+	  $result=countFrequency($games);
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
             "result" => $result));
