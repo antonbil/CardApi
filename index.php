@@ -899,14 +899,14 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	if (count($findgame)>0){
 	  foreach ($findgame as $game) {
 	  if(!is_null ($game["winner"]))
-		$games[]=array($game["gamenumber"]=>array("winner"=>$game["winner"]));
+		$games[]=array($game["gamenumber"],$game["winner"]);
 	  }
 	  $winners=array();
-	  foreach ($games as $key=>$winner) {
-	    if(isset ($winners[$winner]))
-	      $winners[$winner]++;
+	  foreach ($games as $game) {
+	    if(isset ($winners[$game[1]]))
+	      $winners[$game[1]]++;
 	    else
-	      $winners[$winner]=1;
+	      $winners[$game[1]]=1;
 	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
