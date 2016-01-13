@@ -867,6 +867,7 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	  foreach ($winners as $key=>$value) {
 	    $result[]=array($key=>$value);
 	  }
+	  asort ($result);
 	$app->returnResult(array(
             "result" => $result)); 
 });
