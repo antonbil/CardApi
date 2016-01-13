@@ -868,7 +868,7 @@ $app->get('/games/:ip/gametotals',function ($ip) use ($app) {
 		foreach ($findusers as $user) {
 		    $cards=$user["cards"];
 		    $val=$app->getValue(json_decode($cards));
-		    $games[]=array($game["gamenumber"]=>$val);
+		    $games[]=array($game["gamenumber"],$val);
 		}
 	    }
 	  }
