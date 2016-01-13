@@ -853,8 +853,20 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	}
 	$result=array();
 	foreach ($moves as $key => $number) {
-	  $result[]=array($key=>array("moves"=>$number));
+	  $result[]=array($key,$number);
 	}
+	  $winners=array();
+	  foreach ($result as $game) {
+	    if(isset ($winners[$game[1]]))
+	      $winners[$game[1]]++;
+	    else
+	      $winners[$game[1]]=1;
+	  }
+	  //convert winners to array
+	  $result=array();
+	  foreach ($winners as $key=>$value) {
+	    $result[]=array($key=>$value);
+	  }
 	$app->returnResult(array(
             "result" => $result)); 
 });
