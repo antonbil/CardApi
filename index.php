@@ -887,11 +887,23 @@ $app->get('/games/:ip/numplayers',function ($ip) use ($app) {
 		    $num=$num+1;
 		}
 		if($num>1)
-		  $games[]=array($game["gamenumber"]=>$num);//no game for 1 player
+		  $games[]=array($game["gamenumber"],$num);//no game for 1 player
+	  }
+	  $winners=array();
+	  foreach ($games as $game) {
+	    if(isset ($winners[$game[1]]))
+	      $winners[$game[1]]++;
+	    else
+	      $winners[$game[1]]=1;
+	  }
+	  //convert winners to array
+	  $result=array();
+	  foreach ($winners as $key=>$value) {
+	    $result[]=array($key=>$value);
 	  }
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
-            "result" => $games));
+            "result" => $result));
 });
 $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	$findgame=$app->getDB()->game;//CardApi::INITIATED
@@ -908,6 +920,7 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	    else
 	      $winners[$game[1]]=1;
 	  }
+	  //convert winners to array
 	  $result=array();
 	  foreach ($winners as $key=>$value) {
 	    $result[]=array($key=>$value);
