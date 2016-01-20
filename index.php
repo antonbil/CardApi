@@ -855,7 +855,7 @@ $app->get('/games/:ip/numberofmoves',function ($ip) use ($app) {
 	foreach ($moves as $key => $number) {
 	  $result[]=array($key,$number);
 	}
-	$result=countFrequency($result);
+	$result=countFrequency2($result);
 	$app->returnResult(array(
             "result" => $result)); 
 });
@@ -903,7 +903,7 @@ $app->get('/games/:ip/gametotals',function ($ip) use ($app) {
 		}
 	    }
 	  }
-	  $result=countFrequency($games);
+	  $result=countFrequency2($games);
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
             "result" => $result));
@@ -952,7 +952,7 @@ $app->get('/games/:ip/gamewinners',function ($ip) use ($app) {
 	  if(!is_null ($game["winner"]))
 		$games[]=array($game["gamenumber"],$game["winner"]);
 	  }
-	  $result=countFrequency($games);
+	  $result=countFrequency2($games);
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
             "result" => $result));
