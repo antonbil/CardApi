@@ -874,6 +874,21 @@ function countFrequency($games){
 	  }
 	  return $result;
 }
+function countFrequency2($games){
+	  $winners=array();
+	  foreach ($games as $game) {
+	    if(isset ($winners[$game[1]]))
+	      $winners[$game[1]]++;
+	    else
+	      $winners[$game[1]]=1;
+	  }
+	  //convert winners to array
+	  $result=array();
+	  foreach ($winners as $key=>$value) {
+	    $result[]=array($key,$value);
+	  }
+	  return $result;
+}
 $app->get('/games/:ip/gametotals',function ($ip) use ($app) {
 	$findgame=$app->getDB()->game;//CardApi::INITIATED
 	$games=array();
@@ -907,6 +922,24 @@ $app->get('/games/:ip/numplayers',function ($ip) use ($app) {
 		  $games[]=array($game["gamenumber"],$num);//no game for 1 player
 	  }
 	  $result=countFrequency($games);
+	} else {$app->returnError("no games available");return;}
+	$app->returnResult(array(
+            "result" => $result));
+});
+$app->get('/games/:ip/numplayers1',function ($ip) use ($app) {
+	$findgame=$app->getDB()->game;//CardApi::INITIATED
+	$games=array();
+	if (count($findgame)>0){
+	  foreach ($findgame as $game) {
+		$findusers=$app->getDB()->gameuser->where(array("game"=>$game["gamenumber"]));
+		$num=0;
+		foreach ($findusers as $user) {
+		    $num=$num+1;
+		}
+		if($num>1)
+		  $games[]=array($game["gamenumber"],$num);//no game for 1 player
+	  }
+	  $result=countFrequency2($games);
 	} else {$app->returnError("no games available");return;}
 	$app->returnResult(array(
             "result" => $result));
